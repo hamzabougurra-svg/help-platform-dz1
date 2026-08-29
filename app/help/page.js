@@ -12,6 +12,8 @@ export default function HelpPage() {
   const [form, setForm] = useState({
     name: "",
     phone: "",
+    wilaya: "",
+    municipality: "",
     help_type: "",
     description: "",
   });
@@ -51,30 +53,16 @@ export default function HelpPage() {
     setForm({
       name: "",
       phone: "",
+      wilaya: "",
+      municipality: "",
       help_type: "",
       description: "",
     });
   }
 
   return (
-    <main
-      dir="rtl"
-      style={{
-        minHeight: "100vh",
-        background: "#f5f7fa",
-        padding: "30px 16px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "650px",
-          margin: "0 auto",
-          background: "#fff",
-          padding: "25px",
-          borderRadius: "16px",
-        }}
-      >
+    <main dir="rtl" style={mainStyle}>
+      <div style={boxStyle}>
         <h1 style={{ textAlign: "center" }}>🆘 طلب مساعدة</h1>
 
         {result?.success ? (
@@ -90,7 +78,6 @@ export default function HelpPage() {
               name="name"
               value={form.name}
               onChange={handleChange}
-              type="text"
               placeholder="اكتب اسمك"
               style={inputStyle}
             />
@@ -103,6 +90,26 @@ export default function HelpPage() {
               onChange={handleChange}
               type="tel"
               placeholder="اكتب رقم الهاتف"
+              style={inputStyle}
+            />
+
+            <label>الولاية</label>
+            <input
+              required
+              name="wilaya"
+              value={form.wilaya}
+              onChange={handleChange}
+              placeholder="اكتب الولاية"
+              style={inputStyle}
+            />
+
+            <label>البلدية</label>
+            <input
+              required
+              name="municipality"
+              value={form.municipality}
+              onChange={handleChange}
+              placeholder="اكتب البلدية"
               style={inputStyle}
             />
 
@@ -136,10 +143,7 @@ export default function HelpPage() {
             <button
               type="submit"
               disabled={loading}
-              style={{
-                ...buttonStyle,
-                opacity: loading ? 0.6 : 1,
-              }}
+              style={buttonStyle}
             >
               {loading ? "جاري الإرسال..." : "إرسال طلب المساعدة"}
             </button>
@@ -155,6 +159,21 @@ export default function HelpPage() {
     </main>
   );
 }
+
+const mainStyle = {
+  minHeight: "100vh",
+  background: "#f5f7fa",
+  padding: "30px 16px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const boxStyle = {
+  maxWidth: "650px",
+  margin: "0 auto",
+  background: "#fff",
+  padding: "25px",
+  borderRadius: "16px",
+};
 
 const inputStyle = {
   width: "100%",
