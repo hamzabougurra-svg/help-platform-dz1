@@ -1,74 +1,88 @@
-import Link from "next/link";
+"use client";
 
 export default function Home() {
   return (
-    <main
-      dir="rtl"
-      style={{
-        minHeight: "100vh",
-        fontFamily: "Arial, sans-serif",
-        background: "#f5f7fa",
-        padding: "30px 16px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "700px",
-          margin: "0 auto",
-          textAlign: "center",
-        }}
-      >
-        <h1 style={{ fontSize: "32px", marginBottom: "10px" }}>
-          🤝 منصة المساعدة
-        </h1>
+    <main dir="rtl" style={mainStyle}>
+      <div style={containerStyle}>
+        <h1>🤝 منصة المساعدة</h1>
 
-        <p style={{ fontSize: "18px", color: "#555" }}>
+        <p style={subtitleStyle}>
           معًا نساعد من يحتاج، ونصل الخير إلى مستحقيه.
         </p>
 
-        <div
-          style={{
-            display: "grid",
-            gap: "15px",
-            marginTop: "35px",
-          }}
-        >
-          <Link href="/help" style={buttonStyle}>
+        <div style={buttonsStyle}>
+          <a href="/help" style={buttonStyle}>
             🆘 أحتاج إلى مساعدة
-          </Link>
+          </a>
 
-          <button style={buttonStyle}>
+          <a
+            href="/offer"
+            style={{
+              ...buttonStyle,
+              background: "#16a34a",
+              color: "#fff",
+            }}
+          >
             🤲 أريد تقديم مساعدة
-          </button>
+          </a>
 
-          <button style={buttonStyle}>
+          <a
+            href="/track"
+            style={{
+              ...buttonStyle,
+              background: "#f59e0b",
+              color: "#fff",
+            }}
+          >
             🔎 متابعة طلب مساعدة
-          </button>
+          </a>
         </div>
 
-        <p
-          style={{
-            marginTop: "50px",
-            color: "#777",
-            fontSize: "14px",
-          }}
-        >
-          منصة خيرية لخدمة المجتمع الجزائري
+        <p style={footerStyle}>
+          منصة خيرية لخدمة المجتمع الجزائري 🇩🇿
         </p>
       </div>
     </main>
   );
 }
 
+const mainStyle = {
+  minHeight: "100vh",
+  background: "#f5f7fa",
+  padding: "40px 16px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const containerStyle = {
+  maxWidth: "650px",
+  margin: "0 auto",
+  textAlign: "center",
+};
+
+const subtitleStyle = {
+  fontSize: "18px",
+  color: "#555",
+  marginBottom: "35px",
+};
+
+const buttonsStyle = {
+  display: "grid",
+  gap: "15px",
+};
+
 const buttonStyle = {
   display: "block",
-  textDecoration: "none",
   padding: "18px",
-  border: "none",
   borderRadius: "14px",
   fontSize: "18px",
-  cursor: "pointer",
-  background: "#ffffff",
-  color: "#000000",
+  textDecoration: "none",
+  background: "#fff",
+  color: "#222",
   boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+};
+
+const footerStyle = {
+  marginTop: "50px",
+  color: "#777",
+  fontSize: "14px",
 };
