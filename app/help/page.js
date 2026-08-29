@@ -30,9 +30,11 @@ export default function HelpPage() {
     setLoading(true);
     setResult(null);
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("help_requests")
-      .insert([form]);
+      .insert([form])
+      .select("tracking_code")
+      .single();
 
     setLoading(false);
 
@@ -47,7 +49,7 @@ export default function HelpPage() {
 
     setResult({
       success: true,
-      message: "تم إرسال طلبك بنجاح ✅",
+      message: `تم إرسال طلبك بنجاح ✅ رقم المتابعة الخاص بك هو: ${data.tracking_code}`,
     });
 
     setForm({
@@ -66,9 +68,12 @@ export default function HelpPage() {
         <h1 style={{ textAlign: "center" }}>🆘 طلب مساعدة</h1>
 
         {result?.success ? (
-          <div style={{ textAlign: "center", padding: "30px" }}>
+          <div style={successStyle}>
             <h2>✅ تم إرسال الطلب بنجاح</h2>
             <p>{result.message}</p>
+            <p style={{ color: "#666" }}>
+              احتفظ برقم المتابعة لاستخدامه لاحقًا.
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -143,7 +148,10 @@ export default function HelpPage() {
             <button
               type="submit"
               disabled={loading}
-              style={buttonStyle}
+              style={{
+                ...buttonStyle,
+                opacity: loading ? 0.6 : 1,
+              }}
             >
               {loading ? "جاري الإرسال..." : "إرسال طلب المساعدة"}
             </button>
@@ -151,9 +159,7 @@ export default function HelpPage() {
         )}
 
         {result && !result.success && (
-          <p style={{ color: "red", textAlign: "center" }}>
-            {result.message}
-          </p>
+          <p style={errorStyle}>{result.message}</p>
         )}
       </div>
     </main>
@@ -173,6 +179,7 @@ const boxStyle = {
   background: "#fff",
   padding: "25px",
   borderRadius: "16px",
+  boxShadow: "0 3px 15px rgba(0,0,0,0.08)",
 };
 
 const inputStyle = {
@@ -195,4 +202,15 @@ const buttonStyle = {
   cursor: "pointer",
   background: "#2563eb",
   color: "#fff",
+};
+
+const successStyle = {
+  textAlign: "center",
+  padding: "30px 10px",
+};
+
+const errorStyle = {
+  color: "red",
+  textAlign: "center",
+  marginTop: "20px",
 };
