@@ -20,10 +20,7 @@ export default function HelpPage() {
   const [result, setResult] = useState(null);
 
   function handleChange(e) {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   }
 
   async function handleSubmit(e) {
@@ -31,11 +28,9 @@ export default function HelpPage() {
     setLoading(true);
     setResult(null);
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("help_requests")
-      .insert([form])
-      .select("tracking_code")
-      .single();
+      .insert([form]);
 
     setLoading(false);
 
@@ -50,7 +45,7 @@ export default function HelpPage() {
 
     setResult({
       success: true,
-      message: `تم إرسال طلبك بنجاح! رقم المتابعة الخاص بك هو: ${data.tracking_code}`,
+      message: "تم إرسال طلبك بنجاح ✅",
     });
 
     setForm({
@@ -78,23 +73,14 @@ export default function HelpPage() {
           background: "#fff",
           padding: "25px",
           borderRadius: "16px",
-          boxShadow: "0 3px 15px rgba(0,0,0,0.08)",
         }}
       >
         <h1 style={{ textAlign: "center" }}>🆘 طلب مساعدة</h1>
 
         {result?.success ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "30px 10px",
-            }}
-          >
-            <h2>✅ تم إرسال الطلب</h2>
+          <div style={{ textAlign: "center", padding: "30px" }}>
+            <h2>✅ تم إرسال الطلب بنجاح</h2>
             <p>{result.message}</p>
-            <p style={{ color: "#666" }}>
-              احتفظ برقم المتابعة لمتابعة حالة طلبك.
-            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -161,13 +147,7 @@ export default function HelpPage() {
         )}
 
         {result && !result.success && (
-          <p
-            style={{
-              color: "red",
-              textAlign: "center",
-              marginTop: "20px",
-            }}
-          >
+          <p style={{ color: "red", textAlign: "center" }}>
             {result.message}
           </p>
         )}
