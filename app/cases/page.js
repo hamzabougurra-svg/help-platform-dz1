@@ -20,16 +20,26 @@ export default function CasesPage() {
     const { data, error } = await supabase
       .from("help_requests")
       .select(
-        "id, name, wilaya, municipality, help_type, description, status"
+        "id, wilaya, municipality, help_type, description, status"
       )
-      .in("status", ["قيد المراجعة", "مقبول"])
+      .in("status", ["reviewing", "approved"])
       .order("created_at", { ascending: false });
 
-    if (!error) {
+    if (error) {
+      console.error(error);
+    } else {
       setCases(data || []);
     }
 
     setLoading(false);
+  }
+
+  function statusLabel(status) {
+    if (status === "approved") {
+      return "✅ مقبول";
+    }
+
+    return "🔎 قيد المراجعة";
   }
 
   return (
@@ -46,7 +56,9 @@ export default function CasesPage() {
         {!loading && cases.length === 0 && (
           <div style={emptyStyle}>
             <h2>💚 لا توجد حالات حاليًا</h2>
-            <p>سنُظهر هنا الحالات التي تحتاج إلى مساعدة.</p>
+            <p>
+              سنُظهر هنا الحالات التي تحتاج إلى مساعدة.
+            </p>
           </div>
         )}
 
@@ -55,24 +67,26 @@ export default function CasesPage() {
             <h2>🆘 {item.help_type}</h2>
 
             <p>
-              <b>الولاية:</b> {item.wilaya}
+              <b>📍 الولاية:</b> {item.wilaya}
             </p>
 
             <p>
-              <b>البلدية:</b> {item.municipality}
+              <b>🏘️ البلدية:</b> {item.municipality}
             </p>
 
             <p>
-              <b>شرح الحالة:</b>
+              <b>📝 شرح الحالة:</b>
             </p>
 
-            <p style={descriptionStyle}>{item.description}</p>
+            <p style={descriptionStyle}>
+              {item.description}
+            </p>
 
             <div style={statusStyle}>
-              الحالة: {item.status || "قيد المراجعة"}
+              {statusLabel(item.status)}
             </div>
 
-            <a href="/offer" style={buttonStyle}>
+            <a href={`/offer?case=${item.id}`} style={buttonStyle}>
               🤲 أريد المساعدة
             </a>
           </div>
