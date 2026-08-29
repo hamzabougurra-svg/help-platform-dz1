@@ -17,6 +17,10 @@ export default function AdminPage() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [search, setSearch] = useState("");
+  const [wilayaFilter, setWilayaFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -75,10 +79,12 @@ export default function AdminPage() {
 
     if (requestError) {
       console.error(requestError);
+      alert(`خطأ في تحميل الطلبات: ${requestError.message}`);
     }
 
     if (offerError) {
       console.error(offerError);
+      alert(`خطأ في تحميل العروض: ${offerError.message}`);
     }
 
     setRequests(requestData || []);
@@ -193,6 +199,76 @@ export default function AdminPage() {
     };
   }
 
+  const wilayas = [
+    ...new Set(
+      requests
+        .map((item) => item.wilaya)
+        .filter(Boolean)
+    ),
+  ].sort();
+
+  const filteredRequests = requests.filter((item) => {
+    const text = `
+      ${item.name || ""}
+      ${item.phone || ""}
+      ${item.tracking_code || ""}
+      ${item.help_type || ""}
+      ${item.wilaya || ""}
+      ${item.municipality || ""}
+      ${item.description || ""}
+    `.toLowerCase();
+
+    const matchesSearch = text.includes(
+      search.toLowerCase().trim()
+    );
+
+    const matchesWilaya =
+      !wilayaFilter ||
+      item.wilaya === wilayaFilter;
+
+    const matchesStatus =
+      !statusFilter ||
+      item.status === statusFilter;
+
+    return (
+      matchesSearch &&
+      matchesWilaya &&
+      matchesStatus
+    );
+  });
+
+  const pendingRequests = requests.filter(
+    (item) =>
+      item.status === "reviewing" ||
+      item.status === "new"
+  ).length;
+
+  const approvedRequests = requests.filter(
+    (item) => item.status === "approved"
+  ).length;
+
+  const completedRequests = requests.filter(
+    (item) => item.status === "completed"
+  ).length;
+
+  const rejectedRequests = requests.filter(
+    (item) => item.status === "rejected"
+  ).length;
+
+  const pendingOffers = offers.filter(
+    (item) =>
+      !item.status ||
+      item.status === "pending"
+  ).length;
+
+  const acceptedOffers = offers.filter(
+    (item) => item.status === "accepted"
+  ).length;
+
+  const rejectedOffers = offers.filter(
+    (item) => item.status === "rejected"
+  ).length;
+
   if (!session) {
     return (
       <main dir="rtl" style={mainStyle}>
@@ -209,7 +285,9 @@ export default function AdminPage() {
               required
               placeholder="البريد الإلكتروني"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
               style={inputStyle}
             />
 
@@ -218,11 +296,16 @@ export default function AdminPage() {
               required
               placeholder="كلمة المرور"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
               style={inputStyle}
             />
 
-            <button type="submit" style={buttonStyle}>
+            <button
+              type="submit"
+              style={buttonStyle}
+            >
               دخول
             </button>
           </form>
@@ -263,56 +346,178 @@ export default function AdminPage() {
           </div>
         </div>
 
+        <h2>📊 الإحصائيات</h2>
+
         <div style={statsContainer}>
+
           <div style={statCard}>
-            <strong style={{ fontSize: "25px" }}>🆘</strong>
-            <span>طلبات المساعدة</span>
-            <b style={{ fontSize: "24px" }}>
-              {requests.length}
-            </b>
+            <strong>🆘</strong>
+            <span>كل الطلبات</span>
+            <b>{requests.length}</b>
           </div>
 
           <div style={statCard}>
-            <strong style={{ fontSize: "25px" }}>🤲</strong>
-            <span>عروض المساعدة</span>
-            <b style={{ fontSize: "24px" }}>
-              {offers.length}
-            </b>
+            <strong>🟡</strong>
+            <span>قيد المراجعة</span>
+            <b>{pendingRequests}</b>
           </div>
 
           <div style={statCard}>
-            <strong style={{ fontSize: "25px" }}>🟡</strong>
-            <span>عروض قيد الانتظار</span>
-            <b style={{ fontSize: "24px" }}>
-              {
-                offers.filter(
-                  (item) =>
-                    !item.status ||
-                    item.status === "pending"
-                ).length
-              }
-            </b>
+            <strong>✅</strong>
+            <span>طلبات مقبولة</span>
+            <b>{approvedRequests}</b>
           </div>
+
+          <div style={statCard}>
+            <strong>🎉</strong>
+            <span>تمت مساعدتها</span>
+            <b>{completedRequests}</b>
+          </div>
+
+          <div style={statCard}>
+            <strong>❌</strong>
+            <span>طلبات مرفوضة</span>
+            <b>{rejectedRequests}</b>
+          </div>
+
+          <div style={statCard}>
+            <strong>🤲</strong>
+            <span>كل العروض</span>
+            <b>{offers.length}</b>
+          </div>
+
+          <div style={statCard}>
+            <strong>🤝</strong>
+            <span>عروض مقبولة</span>
+            <b>{acceptedOffers}</b>
+          </div>
+
+          <div style={statCard}>
+            <strong>❌</strong>
+            <span>عروض مرفوضة</span>
+            <b>{rejectedOffers}</b>
+          </div>
+
         </div>
 
-        <h2>🆘 طلبات المساعدة</h2>
+        <h2 style={{ marginTop: "40px" }}>
+          🔎 البحث والتصفية
+        </h2>
 
-        {loading && <p>جاري التحميل...</p>}
+        <div style={filtersBox}>
 
-        {!loading && requests.length === 0 && (
-          <div style={emptyStyle}>
-            لا توجد طلبات مساعدة حاليًا.
-          </div>
+          <input
+            type="text"
+            placeholder="🔎 ابحث بالاسم أو الهاتف أو رقم المتابعة..."
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
+            style={filterInput}
+          />
+
+          <select
+            value={wilayaFilter}
+            onChange={(e) =>
+              setWilayaFilter(e.target.value)
+            }
+            style={filterInput}
+          >
+            <option value="">
+              📍 كل الولايات
+            </option>
+
+            {wilayas.map((wilaya) => (
+              <option
+                key={wilaya}
+                value={wilaya}
+              >
+                {wilaya}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value)
+            }
+            style={filterInput}
+          >
+            <option value="">
+              📋 كل الحالات
+            </option>
+
+            <option value="new">
+              🆕 جديد
+            </option>
+
+            <option value="reviewing">
+              🔎 قيد المراجعة
+            </option>
+
+            <option value="approved">
+              ✅ مقبول
+            </option>
+
+            <option value="completed">
+              🎉 تمت المساعدة
+            </option>
+
+            <option value="rejected">
+              ❌ مرفوض
+            </option>
+          </select>
+
+          {(search ||
+            wilayaFilter ||
+            statusFilter) && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setWilayaFilter("");
+                setStatusFilter("");
+              }}
+              style={clearButton}
+            >
+              🧹 مسح البحث والتصفية
+            </button>
+          )}
+
+        </div>
+
+        <h2 style={{ marginTop: "40px" }}>
+          🆘 طلبات المساعدة
+        </h2>
+
+        <p style={{ color: "#666" }}>
+          عرض {filteredRequests.length} من أصل{" "}
+          {requests.length} طلب
+        </p>
+
+        {loading && (
+          <p>جاري التحميل...</p>
         )}
 
-        {requests.map((item) => {
+        {!loading &&
+          filteredRequests.length === 0 && (
+            <div style={emptyStyle}>
+              لا توجد طلبات مطابقة للبحث.
+            </div>
+          )}
+
+        {filteredRequests.map((item) => {
           const requestStatus =
             getRequestStatus(item.status);
 
           return (
-            <div key={item.id} style={cardStyle}>
+            <div
+              key={item.id}
+              style={cardStyle}
+            >
 
               <div style={topRowStyle}>
+
                 <h3 style={{ margin: 0 }}>
                   🆘 {item.name}
                 </h3>
@@ -322,12 +527,14 @@ export default function AdminPage() {
                     ...statusBadge,
                     background:
                       requestStatus.background,
-                    color: requestStatus.color,
+                    color:
+                      requestStatus.color,
                   }}
                 >
                   {requestStatus.icon}{" "}
                   {requestStatus.text}
                 </div>
+
               </div>
 
               <p>📞 {item.phone}</p>
@@ -337,16 +544,23 @@ export default function AdminPage() {
                 {item.municipality}
               </p>
 
-              <p>🤝 {item.help_type}</p>
+              <p>
+                🤝 {item.help_type}
+              </p>
 
-              <p>📝 {item.description}</p>
+              <p>
+                📝 {item.description}
+              </p>
 
               <p>
                 🔢 رقم المتابعة:{" "}
-                <strong>{item.tracking_code}</strong>
+                <strong>
+                  {item.tracking_code}
+                </strong>
               </p>
 
               <div style={statusButtons}>
+
                 <button
                   onClick={() =>
                     updateRequestStatus(
@@ -394,6 +608,7 @@ export default function AdminPage() {
                 >
                   ❌ رفض الطلب
                 </button>
+
               </div>
             </div>
           );
@@ -423,13 +638,18 @@ export default function AdminPage() {
             >
 
               <div style={offerHeaderStyle}>
+
                 <div>
                   <h3 style={{ margin: 0 }}>
                     🤲 عرض مساعدة من{" "}
                     {offer.name}
                   </h3>
 
-                  <p style={{ marginBottom: 0 }}>
+                  <p
+                    style={{
+                      marginBottom: 0,
+                    }}
+                  >
                     📞 {offer.phone}
                   </p>
                 </div>
@@ -446,25 +666,33 @@ export default function AdminPage() {
                   {offerStatus.icon}{" "}
                   {offerStatus.text}
                 </div>
+
               </div>
 
               <div style={sectionStyle}>
+
                 <h4>
                   🤲 المساعدة التي يستطيع تقديمها
                 </h4>
 
                 <p>
-                  <strong>النوع:</strong>{" "}
+                  <strong>
+                    النوع:
+                  </strong>{" "}
                   {offer.help_type}
                 </p>
 
                 <p>
-                  <strong>التفاصيل:</strong>{" "}
+                  <strong>
+                    التفاصيل:
+                  </strong>{" "}
                   {offer.description}
                 </p>
+
               </div>
 
               <div style={requestBoxStyle}>
+
                 <h4>
                   🆘 الحالة التي اختارها المتبرع
                 </h4>
@@ -520,11 +748,16 @@ export default function AdminPage() {
                     </p>
                   </>
                 ) : (
-                  <p style={{ color: "#b91c1c" }}>
-                    ⚠️ لم يتم العثور على الحالة
-                    المرتبطة بهذا العرض.
+                  <p
+                    style={{
+                      color: "#b91c1c",
+                    }}
+                  >
+                    ⚠️ لم يتم العثور على
+                    الحالة المرتبطة بهذا العرض.
                   </p>
                 )}
+
               </div>
 
               <div style={offerActions}>
@@ -558,9 +791,11 @@ export default function AdminPage() {
                 )}
 
               </div>
+
             </div>
           );
         })}
+
       </div>
     </main>
   );
@@ -619,6 +854,26 @@ const inputStyle = {
   fontSize: "17px",
 };
 
+const filterInput = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "14px",
+  border: "1px solid #ddd",
+  borderRadius: "10px",
+  fontSize: "16px",
+  background: "#fff",
+};
+
+const filtersBox = {
+  background: "#fff",
+  padding: "18px",
+  borderRadius: "15px",
+  boxShadow:
+    "0 2px 10px rgba(0,0,0,0.06)",
+  display: "grid",
+  gap: "10px",
+};
+
 const buttonStyle = {
   width: "100%",
   padding: "15px",
@@ -631,17 +886,27 @@ const buttonStyle = {
   cursor: "pointer",
 };
 
+const clearButton = {
+  padding: "13px",
+  border: "none",
+  borderRadius: "10px",
+  background: "#64748b",
+  color: "#fff",
+  fontSize: "15px",
+  cursor: "pointer",
+};
+
 const statsContainer = {
   display: "grid",
   gridTemplateColumns:
-    "repeat(auto-fit, minmax(180px, 1fr))",
-  gap: "15px",
-  marginBottom: "30px",
+    "repeat(auto-fit, minmax(150px, 1fr))",
+  gap: "12px",
+  marginBottom: "25px",
 };
 
 const statCard = {
   background: "#fff",
-  padding: "20px",
+  padding: "18px",
   borderRadius: "14px",
   boxShadow:
     "0 2px 10px rgba(0,0,0,0.06)",
