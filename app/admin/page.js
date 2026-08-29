@@ -19,14 +19,20 @@ export default function AdminPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      if (data.session) loadData();
+
+      if (data.session) {
+        loadData();
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) loadData();
+
+      if (session) {
+        loadData();
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -54,18 +60,27 @@ export default function AdminPage() {
   async function loadData() {
     setLoading(true);
 
-    const { data: requestData } = await supabase
+    const { data: requestData, error: requestError } = await supabase
       .from("help_requests")
       .select("*")
       .order("created_at", { ascending: false });
 
-    const { data: offerData } = await supabase
+    const { data: offerData, error: offerError } = await supabase
       .from("help_offers")
       .select("*")
       .order("created_at", { ascending: false });
 
+    if (requestError) {
+      console.error(requestError);
+    }
+
+    if (offerError) {
+      console.error(offerError);
+    }
+
     setRequests(requestData || []);
     setOffers(offerData || []);
+
     setLoading(false);
   }
 
@@ -76,11 +91,40 @@ export default function AdminPage() {
       .eq("id", id);
 
     if (error) {
-      alert("تعذر تحديث الحالة.");
+      console.error(error);
+      alert(`تعذر تحديث الحالة: ${error.message}`);
       return;
     }
 
-    loadData();
+    await loadData();
+  }
+
+  function getStatusText(status) {
+    switch (status) {
+      case "new":
+        return "🆕 جديد";
+
+      case "reviewing":
+        return "🔎 قيد المراجعة";
+
+      case "approved":
+        return "✅ مقبول";
+
+      case "completed":
+        return "🎉 تمت المساعدة";
+
+      case "rejected":
+        return "❌ مرفوض";
+
+      default:
+        return status || "غير محدد";
+    }
+  }
+
+  function getCaseForOffer(offer) {
+    return requests.find(
+      (request) => request.id === offer.help_request_id
+    );
   }
 
   if (!session) {
@@ -108,7 +152,7 @@ export default function AdminPage() {
               style={inputStyle}
             />
 
-            <button style={buttonStyle}>
+            <button type="submit" style={buttonStyle}>
               دخول
             </button>
           </form>
@@ -122,58 +166,135 @@ export default function AdminPage() {
       <div style={containerStyle}>
         <h1>👨‍💼 لوحة الإدارة</h1>
 
-        <button onClick={logout} style={logoutButton}>
-          تسجيل الخروج
-        </button>
+        <div style={{ marginBottom: "25px" }}>
+          <button onClick={logout} style={logoutButton}>
+            تسجيل الخروج
+          </button>
 
-        <button onClick={loadData} style={refreshButton}>
-          🔄 تحديث
-        </button>
+          <button onClick={loadData} style={refreshButton}>
+            🔄 تحديث
+          </button>
+        </div>
 
-        <h2>🆘 طلبات المساعدة</h2>
+        <h2>🆘 طلبات المساعدة ({requests.length})</h2>
 
         {loading && <p>جاري التحميل...</p>}
 
+        {!loading && requests.length === 0 && (
+          <p>لا توجد طلبات مساعدة حاليًا.</p>
+        )}
+
         {requests.map((item) => (
           <div key={item.id} style={cardStyle}>
-            <h3>{item.name}</h3>
+            <h3>🆘 {item.name}</h3>
 
             <p>📞 {item.phone}</p>
-            <p>📍 {item.wilaya} - {item.municipality}</p>
+            <p>
+              📍 {item.wilaya} - {item.municipality}
+            </p>
             <p>🤝 {item.help_type}</p>
             <p>📝 {item.description}</p>
             <p>🔢 رقم المتابعة: {item.tracking_code}</p>
 
             <p>
-              <b>الحالة:</b> {item.status || "قيد المراجعة"}
+              <b>الحالة:</b> {getStatusText(item.status)}
             </p>
 
             <div style={statusButtons}>
-              <button onClick={() => updateStatus(item.id, "قيد المراجعة")}>
-                قيد المراجعة
+              <button
+                onClick={() => updateStatus(item.id, "new")}
+                style={statusButton}
+              >
+                🆕 جديد
               </button>
 
-              <button onClick={() => updateStatus(item.id, "مقبول")}>
-                مقبول
+              <button
+                onClick={() => updateStatus(item.id, "reviewing")}
+                style={statusButton}
+              >
+                🔎 قيد المراجعة
               </button>
 
-              <button onClick={() => updateStatus(item.id, "تمت المساعدة")}>
-                تمت المساعدة
+              <button
+                onClick={() => updateStatus(item.id, "approved")}
+                style={statusButton}
+              >
+                ✅ مقبول
+              </button>
+
+              <button
+                onClick={() => updateStatus(item.id, "completed")}
+                style={statusButton}
+              >
+                🎉 تمت المساعدة
+              </button>
+
+              <button
+                onClick={() => updateStatus(item.id, "rejected")}
+                style={statusButton}
+              >
+                ❌ مرفوض
               </button>
             </div>
           </div>
         ))}
 
-        <h2>🤲 عروض المساعدة</h2>
+        <h2 style={{ marginTop: "40px" }}>
+          🤲 عروض المساعدة ({offers.length})
+        </h2>
 
-        {offers.map((item) => (
-          <div key={item.id} style={cardStyle}>
-            <h3>{item.name}</h3>
-            <p>📞 {item.phone}</p>
-            <p>🤝 {item.help_type}</p>
-            <p>📝 {item.description}</p>
-          </div>
-        ))}
+        {!loading && offers.length === 0 && (
+          <p>لا توجد عروض مساعدة حاليًا.</p>
+        )}
+
+        {offers.map((item) => {
+          const selectedCase = getCaseForOffer(item);
+
+          return (
+            <div key={item.id} style={offerCardStyle}>
+              <h3>🤲 المتبرع: {item.name}</h3>
+
+              <p>📞 هاتف المتبرع: {item.phone}</p>
+              <p>🤝 نوع المساعدة: {item.help_type}</p>
+              <p>📝 تفاصيل العرض: {item.description}</p>
+
+              <hr />
+
+              {selectedCase ? (
+                <>
+                  <h3>🆘 الحالة التي اختارها</h3>
+
+                  <p>
+                    👤 صاحب الطلب: {selectedCase.name}
+                  </p>
+
+                  <p>
+                    📍 {selectedCase.wilaya} -{" "}
+                    {selectedCase.municipality}
+                  </p>
+
+                  <p>
+                    🤝 المطلوب: {selectedCase.help_type}
+                  </p>
+
+                  <p>
+                    🔢 رقم المتابعة:{" "}
+                    {selectedCase.tracking_code}
+                  </p>
+
+                  <p>
+                    <b>حالة الطلب:</b>{" "}
+                    {getStatusText(selectedCase.status)}
+                  </p>
+                </>
+              ) : (
+                <p style={{ color: "#dc2626" }}>
+                  ⚠️ لم يتم العثور على الطلب المرتبط بهذا العرض.
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
     </main>
   );
@@ -247,8 +368,25 @@ const cardStyle = {
   boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
 };
 
+const offerCardStyle = {
+  background: "#ecfdf5",
+  padding: "20px",
+  margin: "15px 0",
+  borderRadius: "14px",
+  border: "1px solid #bbf7d0",
+};
+
 const statusButtons = {
   display: "flex",
   gap: "8px",
   flexWrap: "wrap",
+};
+
+const statusButton = {
+  padding: "10px 14px",
+  border: "none",
+  borderRadius: "8px",
+  background: "#2563eb",
+  color: "#fff",
+  cursor: "pointer",
 };
