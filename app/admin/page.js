@@ -9,23 +9,46 @@ const supabase = createClient(
 );
 
 export default function AdminPage() {
+  const [session, setSession] = useState(null);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
   const [requests, setRequests] = useState([]);
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const ADMIN_PASSWORD = "DZ2026";
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      if (data.session) loadData();
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) loadData();
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   async function login(e) {
     e.preventDefault();
 
-    if (password === ADMIN_PASSWORD) {
-      setLoggedIn(true);
-      loadData();
-    } else {
-      alert("كلمة المرور غير صحيحة");
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
     }
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    setRequests([]);
+    setOffers([]);
   }
 
   async function loadData() {
@@ -43,7 +66,6 @@ export default function AdminPage() {
 
     setRequests(requestData || []);
     setOffers(offerData || []);
-
     setLoading(false);
   }
 
@@ -54,22 +76,32 @@ export default function AdminPage() {
       .eq("id", id);
 
     if (error) {
-      alert("حدث خطأ");
+      alert("تعذر تحديث الحالة.");
       return;
     }
 
     loadData();
   }
 
-  if (!loggedIn) {
+  if (!session) {
     return (
       <main dir="rtl" style={mainStyle}>
         <div style={boxStyle}>
-          <h1>🔐 لوحة الإدارة</h1>
+          <h1>🔐 دخول الإدارة</h1>
 
           <form onSubmit={login}>
             <input
+              type="email"
+              required
+              placeholder="البريد الإلكتروني"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+            />
+
+            <input
               type="password"
+              required
               placeholder="كلمة المرور"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -90,6 +122,10 @@ export default function AdminPage() {
       <div style={containerStyle}>
         <h1>👨‍💼 لوحة الإدارة</h1>
 
+        <button onClick={logout} style={logoutButton}>
+          تسجيل الخروج
+        </button>
+
         <button onClick={loadData} style={refreshButton}>
           🔄 تحديث
         </button>
@@ -109,26 +145,19 @@ export default function AdminPage() {
             <p>🔢 رقم المتابعة: {item.tracking_code}</p>
 
             <p>
-              <b>الحالة:</b>{" "}
-              {item.status || "قيد المراجعة"}
+              <b>الحالة:</b> {item.status || "قيد المراجعة"}
             </p>
 
             <div style={statusButtons}>
-              <button
-                onClick={() => updateStatus(item.id, "قيد المراجعة")}
-              >
+              <button onClick={() => updateStatus(item.id, "قيد المراجعة")}>
                 قيد المراجعة
               </button>
 
-              <button
-                onClick={() => updateStatus(item.id, "مقبول")}
-              >
+              <button onClick={() => updateStatus(item.id, "مقبول")}>
                 مقبول
               </button>
 
-              <button
-                onClick={() => updateStatus(item.id, "تمت المساعدة")}
-              >
+              <button onClick={() => updateStatus(item.id, "تمت المساعدة")}>
                 تمت المساعدة
               </button>
             </div>
@@ -176,7 +205,7 @@ const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
   padding: "15px",
-  margin: "20px 0",
+  margin: "10px 0",
   border: "1px solid #ddd",
   borderRadius: "10px",
   fontSize: "17px",
@@ -185,11 +214,21 @@ const inputStyle = {
 const buttonStyle = {
   width: "100%",
   padding: "15px",
+  marginTop: "10px",
   border: "none",
   borderRadius: "10px",
   background: "#2563eb",
   color: "#fff",
   fontSize: "17px",
+};
+
+const logoutButton = {
+  padding: "12px 20px",
+  marginLeft: "10px",
+  border: "none",
+  borderRadius: "10px",
+  background: "#dc2626",
+  color: "#fff",
 };
 
 const refreshButton = {
