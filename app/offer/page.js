@@ -33,16 +33,37 @@ export default function OfferPage() {
     const { data, error } = await supabase
       .from("help_requests")
       .select(
-        "id, name, wilaya, municipality, help_type, description, status, tracking_code"
+        "id, wilaya, municipality, help_type, description, status, tracking_code"
       )
-      .in("status", ["new", "reviewing", "approved"])
+      .in("status", ["reviewing", "approved"])
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error(error);
       alert(`خطأ في تحميل الحالات: ${error.message}`);
-    } else {
-      setCases(data || []);
+      setLoadingCases(false);
+      return;
+    }
+
+    const availableCases = data || [];
+    setCases(availableCases);
+
+    // إذا دخل المتبرع من زر "أريد المساعدة"
+    // نختار الحالة تلقائيًا
+    const params = new URLSearchParams(window.location.search);
+    const caseId = params.get("case");
+
+    if (caseId) {
+      const selectedCase = availableCases.find(
+        (item) => item.id === caseId
+      );
+
+      if (selectedCase) {
+        setForm((previous) => ({
+          ...previous,
+          help_request_id: caseId,
+        }));
+      }
     }
 
     setLoadingCases(false);
@@ -53,6 +74,12 @@ export default function OfferPage() {
       ...form,
       [e.target.name]: e.target.value,
     });
+  }
+
+  function getSelectedCase() {
+    return cases.find(
+      (item) => item.id === form.help_request_id
+    );
   }
 
   async function handleSubmit(e) {
@@ -95,7 +122,11 @@ export default function OfferPage() {
       description: "",
       help_request_id: "",
     });
+
+    window.history.replaceState({}, "", "/offer");
   }
+
+  const selectedCase = getSelectedCase();
 
   return (
     <main dir="rtl" style={mainStyle}>
@@ -108,14 +139,17 @@ export default function OfferPage() {
 
         {success ? (
           <div style={successStyle}>
-            <h2>✅ تم إرسال عرض المساعدة</h2>
+            <div style={successIcon}>✅</div>
+
+            <h2>تم إرسال عرض المساعدة بنجاح</h2>
 
             <p>
               جزاك الله خيرًا ❤️
             </p>
 
             <p>
-              تم تسجيل عرضك بنجاح، وسيتم التواصل معك عند الحاجة.
+              تم تسجيل عرضك، وستقوم الإدارة بمراجعة العرض
+              والتواصل معك عند الحاجة.
             </p>
 
             <button
@@ -125,13 +159,13 @@ export default function OfferPage() {
               }}
               style={buttonStyle}
             >
-              تقديم عرض مساعدة آخر
+              🤲 تقديم عرض مساعدة آخر
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
             <label>
-              <strong>🆘 اختر الحالة التي تريد مساعدتها</strong>
+              <strong>🆘 الحالة التي تريد مساعدتها</strong>
             </label>
 
             <select
@@ -152,48 +186,36 @@ export default function OfferPage() {
 
               {cases.map((item) => (
                 <option key={item.id} value={item.id}>
-                  🆘 {item.name} — {item.wilaya} -{" "}
-                  {item.municipality} — {item.help_type}
+                  🆘 {item.wilaya} - {item.municipality} —{" "}
+                  {item.help_type}
                 </option>
               ))}
             </select>
 
-            {form.help_request_id && (
+            {selectedCase && (
               <div style={caseInfoStyle}>
-                {(() => {
-                  const selectedCase = cases.find(
-                    (item) => item.id === form.help_request_id
-                  );
+                <h3>📋 تفاصيل الحالة</h3>
 
-                  if (!selectedCase) return null;
+                <p>
+                  <strong>📍 المكان:</strong>{" "}
+                  {selectedCase.wilaya} -{" "}
+                  {selectedCase.municipality}
+                </p>
 
-                  return (
-                    <>
-                      <h3>📋 تفاصيل الحالة</h3>
+                <p>
+                  <strong>🤝 نوع الحاجة:</strong>{" "}
+                  {selectedCase.help_type}
+                </p>
 
-                      <p>
-                        <strong>الاسم:</strong>{" "}
-                        {selectedCase.name}
-                      </p>
+                <p>
+                  <strong>📝 تفاصيل الحالة:</strong>{" "}
+                  {selectedCase.description}
+                </p>
 
-                      <p>
-                        <strong>📍 المكان:</strong>{" "}
-                        {selectedCase.wilaya} -{" "}
-                        {selectedCase.municipality}
-                      </p>
-
-                      <p>
-                        <strong>🤝 نوع الحاجة:</strong>{" "}
-                        {selectedCase.help_type}
-                      </p>
-
-                      <p>
-                        <strong>📝 التفاصيل:</strong>{" "}
-                        {selectedCase.description}
-                      </p>
-                    </>
-                  );
-                })()}
+                <p style={privacyStyle}>
+                  🔒 بيانات صاحب الحالة الشخصية مخفية
+                  حفاظًا على الخصوصية.
+                </p>
               </div>
             )}
 
@@ -220,7 +242,9 @@ export default function OfferPage() {
               style={inputStyle}
             />
 
-            <label>نوع المساعدة التي تستطيع تقديمها</label>
+            <label>
+              نوع المساعدة التي تستطيع تقديمها
+            </label>
 
             <select
               required
@@ -229,13 +253,33 @@ export default function OfferPage() {
               onChange={handleChange}
               style={inputStyle}
             >
-              <option value="">اختر نوع المساعدة</option>
-              <option value="مساعدة مالية">💰 مساعدة مالية</option>
-              <option value="مساعدة غذائية">🍞 مساعدة غذائية</option>
-              <option value="مساعدة طبية">🏥 مساعدة طبية</option>
-              <option value="مساعدة في السكن">🏠 مساعدة في السكن</option>
-              <option value="مساعدة ملابس">👕 مساعدة ملابس</option>
-              <option value="مساعدة أخرى">🤝 مساعدة أخرى</option>
+              <option value="">
+                اختر نوع المساعدة
+              </option>
+
+              <option value="مساعدة مالية">
+                💰 مساعدة مالية
+              </option>
+
+              <option value="مساعدة غذائية">
+                🍞 مساعدة غذائية
+              </option>
+
+              <option value="مساعدة طبية">
+                🏥 مساعدة طبية
+              </option>
+
+              <option value="مساعدة في السكن">
+                🏠 مساعدة في السكن
+              </option>
+
+              <option value="مساعدة ملابس">
+                👕 مساعدة ملابس
+              </option>
+
+              <option value="مساعدة أخرى">
+                🤝 مساعدة أخرى
+              </option>
             </select>
 
             <label>تفاصيل المساعدة</label>
@@ -252,17 +296,25 @@ export default function OfferPage() {
 
             <button
               type="submit"
-              disabled={loading || loadingCases || cases.length === 0}
+              disabled={
+                loading ||
+                loadingCases ||
+                cases.length === 0 ||
+                !form.help_request_id
+              }
               style={{
                 ...buttonStyle,
                 opacity:
-                  loading || loadingCases || cases.length === 0
+                  loading ||
+                  loadingCases ||
+                  cases.length === 0 ||
+                  !form.help_request_id
                     ? 0.6
                     : 1,
               }}
             >
               {loading
-                ? "جاري الإرسال..."
+                ? "جاري إرسال العرض..."
                 : "🤲 إرسال عرض المساعدة"}
             </button>
           </form>
@@ -274,7 +326,8 @@ export default function OfferPage() {
 
 const mainStyle = {
   minHeight: "100vh",
-  background: "linear-gradient(135deg, #ecfdf5, #f8fafc)",
+  background:
+    "linear-gradient(135deg, #ecfdf5, #f8fafc)",
   padding: "30px 16px",
   fontFamily: "Arial, sans-serif",
 };
@@ -316,6 +369,12 @@ const caseInfoStyle = {
   lineHeight: "1.7",
 };
 
+const privacyStyle = {
+  color: "#166534",
+  fontSize: "14px",
+  marginTop: "15px",
+};
+
 const buttonStyle = {
   width: "100%",
   padding: "16px",
@@ -331,4 +390,9 @@ const buttonStyle = {
 const successStyle = {
   textAlign: "center",
   padding: "25px 5px",
+};
+
+const successIcon = {
+  fontSize: "50px",
+  marginBottom: "10px",
 };
