@@ -15,7 +15,6 @@ export default function AdminPage() {
 
   const [requests, setRequests] = useState([]);
   const [offers, setOffers] = useState([]);
-
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -29,10 +28,10 @@ export default function AdminPage() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
 
-      if (session) {
+      if (newSession) {
         loadData();
       }
     });
@@ -55,7 +54,6 @@ export default function AdminPage() {
 
   async function logout() {
     await supabase.auth.signOut();
-
     setRequests([]);
     setOffers([]);
   }
@@ -123,17 +121,42 @@ export default function AdminPage() {
     );
   }
 
-  function getOfferStatusLabel(status) {
-    if (status === "accepted") return "✅ مقبول";
-    if (status === "rejected") return "❌ مرفوض";
-    return "🟡 قيد الانتظار";
+  function getOfferStatus(status) {
+    if (status === "accepted") {
+      return {
+        text: "مقبول",
+        icon: "✅",
+        background: "#dcfce7",
+        color: "#166534",
+      };
+    }
+
+    if (status === "rejected") {
+      return {
+        text: "مرفوض",
+        icon: "❌",
+        background: "#fee2e2",
+        color: "#991b1b",
+      };
+    }
+
+    return {
+      text: "قيد الانتظار",
+      icon: "🟡",
+      background: "#fef3c7",
+      color: "#92400e",
+    };
   }
 
   if (!session) {
     return (
       <main dir="rtl" style={mainStyle}>
-        <div style={boxStyle}>
+        <div style={loginBoxStyle}>
           <h1>🔐 دخول الإدارة</h1>
+
+          <p style={{ color: "#666" }}>
+            لوحة إدارة منصة المساعدة
+          </p>
 
           <form onSubmit={login}>
             <input
@@ -166,31 +189,61 @@ export default function AdminPage() {
   return (
     <main dir="rtl" style={mainStyle}>
       <div style={containerStyle}>
-        <h1>👨‍💼 لوحة الإدارة</h1>
+        <div style={headerStyle}>
+          <div>
+            <h1 style={{ margin: 0 }}>
+              👨‍💼 لوحة الإدارة
+            </h1>
 
-        <div style={topButtons}>
-          <button onClick={logout} style={logoutButton}>
-            تسجيل الخروج
-          </button>
+            <p style={{ color: "#666" }}>
+              إدارة طلبات وعروض المساعدة
+            </p>
+          </div>
 
-          <button onClick={loadData} style={refreshButton}>
-            🔄 تحديث
-          </button>
+          <div style={headerButtons}>
+            <button
+              onClick={loadData}
+              style={refreshButton}
+            >
+              🔄 تحديث
+            </button>
+
+            <button
+              onClick={logout}
+              style={logoutButton}
+            >
+              تسجيل الخروج
+            </button>
+          </div>
         </div>
 
-        <h2>
-          🆘 طلبات المساعدة ({requests.length})
-        </h2>
+        <div style={statsContainer}>
+          <div style={statCard}>
+            <strong>🆘</strong>
+            <span>طلبات المساعدة</span>
+            <b>{requests.length}</b>
+          </div>
+
+          <div style={statCard}>
+            <strong>🤲</strong>
+            <span>عروض المساعدة</span>
+            <b>{offers.length}</b>
+          </div>
+        </div>
+
+        <h2>🆘 طلبات المساعدة</h2>
 
         {loading && <p>جاري التحميل...</p>}
 
         {!loading && requests.length === 0 && (
-          <p>لا توجد طلبات مساعدة حاليًا.</p>
+          <div style={emptyStyle}>
+            لا توجد طلبات مساعدة حاليًا.
+          </div>
         )}
 
         {requests.map((item) => (
           <div key={item.id} style={cardStyle}>
-            <h3>{item.name}</h3>
+            <h3>🆘 {item.name}</h3>
 
             <p>📞 {item.phone}</p>
 
@@ -208,109 +261,159 @@ export default function AdminPage() {
             </p>
 
             <p>
-              <b>الحالة:</b>{" "}
-              {item.status || "new"}
+              <strong>الحالة:</strong>{" "}
+              {item.status}
             </p>
 
             <div style={statusButtons}>
               <button
                 onClick={() =>
-                  updateRequestStatus(item.id, "reviewing")
+                  updateRequestStatus(
+                    item.id,
+                    "reviewing"
+                  )
                 }
+                style={reviewButton}
               >
                 🔎 قيد المراجعة
               </button>
 
               <button
                 onClick={() =>
-                  updateRequestStatus(item.id, "approved")
+                  updateRequestStatus(
+                    item.id,
+                    "approved"
+                  )
                 }
+                style={acceptButton}
               >
-                ✅ مقبول
+                ✅ قبول الطلب
               </button>
 
               <button
                 onClick={() =>
-                  updateRequestStatus(item.id, "completed")
+                  updateRequestStatus(
+                    item.id,
+                    "completed"
+                  )
                 }
+                style={completeButton}
               >
                 🎉 تمت المساعدة
               </button>
 
               <button
                 onClick={() =>
-                  updateRequestStatus(item.id, "rejected")
+                  updateRequestStatus(
+                    item.id,
+                    "rejected"
+                  )
                 }
+                style={rejectButton}
               >
-                ❌ مرفوض
+                ❌ رفض الطلب
               </button>
             </div>
           </div>
         ))}
 
-        <h2>
-          🤲 عروض المساعدة ({offers.length})
+        <h2 style={{ marginTop: "45px" }}>
+          🤲 عروض المساعدة
         </h2>
 
         {offers.length === 0 && (
-          <p>لا توجد عروض مساعدة حاليًا.</p>
+          <div style={emptyStyle}>
+            لا توجد عروض مساعدة حاليًا.
+          </div>
         )}
 
         {offers.map((offer) => {
-          const selectedRequest =
-            getRequestForOffer(offer);
+          const request = getRequestForOffer(offer);
+          const status = getOfferStatus(offer.status);
 
           return (
-            <div key={offer.id} style={cardStyle}>
-              <h3>🤲 عرض من: {offer.name}</h3>
+            <div key={offer.id} style={offerCardStyle}>
+              <div style={offerHeaderStyle}>
+                <div>
+                  <h3 style={{ margin: 0 }}>
+                    🤲 عرض مساعدة من {offer.name}
+                  </h3>
 
-              <p>📞 {offer.phone}</p>
+                  <p style={{ marginBottom: 0 }}>
+                    📞 {offer.phone}
+                  </p>
+                </div>
 
-              <p>
-                🤝 نوع المساعدة: {offer.help_type}
-              </p>
+                <div
+                  style={{
+                    ...statusBadge,
+                    background: status.background,
+                    color: status.color,
+                  }}
+                >
+                  {status.icon} {status.text}
+                </div>
+              </div>
 
-              <p>
-                📝 تفاصيل العرض: {offer.description}
-              </p>
+              <div style={sectionStyle}>
+                <h4>🤲 المساعدة التي يستطيع تقديمها</h4>
 
-              <div style={caseBoxStyle}>
+                <p>
+                  <strong>النوع:</strong>{" "}
+                  {offer.help_type}
+                </p>
+
+                <p>
+                  <strong>التفاصيل:</strong>{" "}
+                  {offer.description}
+                </p>
+              </div>
+
+              <div style={requestBoxStyle}>
                 <h4>🆘 الحالة التي اختارها المتبرع</h4>
 
-                {selectedRequest ? (
+                {request ? (
                   <>
                     <p>
-                      <strong>الاسم:</strong>{" "}
-                      {selectedRequest.name}
+                      <strong>اسم المحتاج:</strong>{" "}
+                      {request.name}
                     </p>
 
                     <p>
-                      📍 {selectedRequest.wilaya} -{" "}
-                      {selectedRequest.municipality}
+                      📞 <strong>هاتف المحتاج:</strong>{" "}
+                      {request.phone}
                     </p>
 
                     <p>
-                      🤝 {selectedRequest.help_type}
+                      📍 <strong>المكان:</strong>{" "}
+                      {request.wilaya} -{" "}
+                      {request.municipality}
                     </p>
 
                     <p>
-                      🔢 رقم المتابعة:{" "}
-                      {selectedRequest.tracking_code}
+                      🤝 <strong>نوع الحاجة:</strong>{" "}
+                      {request.help_type}
+                    </p>
+
+                    <p>
+                      📝 <strong>تفاصيل الطلب:</strong>{" "}
+                      {request.description}
+                    </p>
+
+                    <p>
+                      🔢 <strong>رقم المتابعة:</strong>{" "}
+                      {request.tracking_code}
                     </p>
                   </>
                 ) : (
-                  <p>
-                    ⚠️ لم يتم العثور على الحالة المرتبطة بهذا العرض.
+                  <p style={{ color: "#b91c1c" }}>
+                    ⚠️ لم يتم العثور على الحالة المرتبطة
+                    بهذا العرض.
                   </p>
                 )}
               </div>
 
-              <p>
-                <strong>حالة العرض:</strong>{" "}
-                {getOfferStatusLabel(offer.status)}
-              </p>
-
-              <div style={statusButtons}>
+              <div style={offerActions}>
                 <button
                   onClick={() =>
                     updateOfferStatus(
@@ -351,18 +454,37 @@ const mainStyle = {
 };
 
 const containerStyle = {
-  maxWidth: "900px",
+  maxWidth: "1000px",
   margin: "0 auto",
 };
 
-const boxStyle = {
+const loginBoxStyle = {
   maxWidth: "450px",
   margin: "80px auto",
   background: "#fff",
-  padding: "25px",
-  borderRadius: "16px",
+  padding: "28px",
+  borderRadius: "18px",
   boxShadow: "0 3px 15px rgba(0,0,0,0.08)",
   textAlign: "center",
+};
+
+const headerStyle = {
+  background: "#fff",
+  padding: "22px",
+  borderRadius: "16px",
+  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "15px",
+  flexWrap: "wrap",
+  marginBottom: "20px",
+};
+
+const headerButtons = {
+  display: "flex",
+  gap: "8px",
+  flexWrap: "wrap",
 };
 
 const inputStyle = {
@@ -387,29 +509,21 @@ const buttonStyle = {
   cursor: "pointer",
 };
 
-const topButtons = {
+const statsContainer = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: "15px",
+  marginBottom: "30px",
+};
+
+const statCard = {
+  background: "#fff",
+  padding: "20px",
+  borderRadius: "14px",
+  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
   display: "flex",
-  gap: "10px",
-  marginBottom: "25px",
-  flexWrap: "wrap",
-};
-
-const logoutButton = {
-  padding: "12px 20px",
-  border: "none",
-  borderRadius: "10px",
-  background: "#dc2626",
-  color: "#fff",
-  cursor: "pointer",
-};
-
-const refreshButton = {
-  padding: "12px 20px",
-  border: "none",
-  borderRadius: "10px",
-  background: "#555",
-  color: "#fff",
-  cursor: "pointer",
+  flexDirection: "column",
+  gap: "8px",
 };
 
 const cardStyle = {
@@ -420,13 +534,46 @@ const cardStyle = {
   boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
 };
 
-const caseBoxStyle = {
+const offerCardStyle = {
+  ...cardStyle,
+  borderRight: "5px solid #16a34a",
+};
+
+const offerHeaderStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "15px",
+  flexWrap: "wrap",
+};
+
+const statusBadge = {
+  padding: "8px 14px",
+  borderRadius: "20px",
+  fontWeight: "bold",
+  whiteSpace: "nowrap",
+};
+
+const sectionStyle = {
+  marginTop: "18px",
+  padding: "15px",
+  background: "#f8fafc",
+  borderRadius: "12px",
+};
+
+const requestBoxStyle = {
+  marginTop: "15px",
+  padding: "18px",
   background: "#f0fdf4",
   border: "1px solid #bbf7d0",
-  padding: "15px",
   borderRadius: "12px",
-  marginTop: "15px",
-  marginBottom: "15px",
+};
+
+const offerActions = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  marginTop: "18px",
 };
 
 const statusButtons = {
@@ -436,8 +583,35 @@ const statusButtons = {
   marginTop: "15px",
 };
 
+const refreshButton = {
+  padding: "11px 18px",
+  border: "none",
+  borderRadius: "10px",
+  background: "#555",
+  color: "#fff",
+  cursor: "pointer",
+};
+
+const logoutButton = {
+  padding: "11px 18px",
+  border: "none",
+  borderRadius: "10px",
+  background: "#dc2626",
+  color: "#fff",
+  cursor: "pointer",
+};
+
+const reviewButton = {
+  padding: "10px 14px",
+  border: "none",
+  borderRadius: "8px",
+  background: "#f59e0b",
+  color: "#fff",
+  cursor: "pointer",
+};
+
 const acceptButton = {
-  padding: "10px 15px",
+  padding: "10px 14px",
   border: "none",
   borderRadius: "8px",
   background: "#16a34a",
@@ -445,11 +619,28 @@ const acceptButton = {
   cursor: "pointer",
 };
 
+const completeButton = {
+  padding: "10px 14px",
+  border: "none",
+  borderRadius: "8px",
+  background: "#2563eb",
+  color: "#fff",
+  cursor: "pointer",
+};
+
 const rejectButton = {
-  padding: "10px 15px",
+  padding: "10px 14px",
   border: "none",
   borderRadius: "8px",
   background: "#dc2626",
   color: "#fff",
   cursor: "pointer",
+};
+
+const emptyStyle = {
+  background: "#fff",
+  padding: "20px",
+  borderRadius: "14px",
+  color: "#666",
+  textAlign: "center",
 };
