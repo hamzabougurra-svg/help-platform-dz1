@@ -102,6 +102,15 @@ export default function AdminPage() {
   }
 
   async function updateOfferStatus(id, status) {
+    const action =
+      status === "accepted"
+        ? "قبول هذا العرض"
+        : "رفض هذا العرض";
+
+    if (!confirm(`هل أنت متأكد من ${action}؟`)) {
+      return;
+    }
+
     const { error } = await supabase
       .from("help_offers")
       .update({ status })
@@ -119,6 +128,42 @@ export default function AdminPage() {
     return requests.find(
       (request) => request.id === offer.help_request_id
     );
+  }
+
+  function getRequestStatus(status) {
+    if (status === "approved") {
+      return {
+        text: "مقبول",
+        icon: "✅",
+        background: "#dcfce7",
+        color: "#166534",
+      };
+    }
+
+    if (status === "completed") {
+      return {
+        text: "تمت المساعدة",
+        icon: "🎉",
+        background: "#dbeafe",
+        color: "#1d4ed8",
+      };
+    }
+
+    if (status === "rejected") {
+      return {
+        text: "مرفوض",
+        icon: "❌",
+        background: "#fee2e2",
+        color: "#991b1b",
+      };
+    }
+
+    return {
+      text: "قيد المراجعة",
+      icon: "🔎",
+      background: "#fef3c7",
+      color: "#92400e",
+    };
   }
 
   function getOfferStatus(status) {
@@ -189,6 +234,7 @@ export default function AdminPage() {
   return (
     <main dir="rtl" style={mainStyle}>
       <div style={containerStyle}>
+
         <div style={headerStyle}>
           <div>
             <h1 style={{ margin: 0 }}>
@@ -219,15 +265,33 @@ export default function AdminPage() {
 
         <div style={statsContainer}>
           <div style={statCard}>
-            <strong>🆘</strong>
+            <strong style={{ fontSize: "25px" }}>🆘</strong>
             <span>طلبات المساعدة</span>
-            <b>{requests.length}</b>
+            <b style={{ fontSize: "24px" }}>
+              {requests.length}
+            </b>
           </div>
 
           <div style={statCard}>
-            <strong>🤲</strong>
+            <strong style={{ fontSize: "25px" }}>🤲</strong>
             <span>عروض المساعدة</span>
-            <b>{offers.length}</b>
+            <b style={{ fontSize: "24px" }}>
+              {offers.length}
+            </b>
+          </div>
+
+          <div style={statCard}>
+            <strong style={{ fontSize: "25px" }}>🟡</strong>
+            <span>عروض قيد الانتظار</span>
+            <b style={{ fontSize: "24px" }}>
+              {
+                offers.filter(
+                  (item) =>
+                    !item.status ||
+                    item.status === "pending"
+                ).length
+              }
+            </b>
           </div>
         </div>
 
@@ -241,81 +305,99 @@ export default function AdminPage() {
           </div>
         )}
 
-        {requests.map((item) => (
-          <div key={item.id} style={cardStyle}>
-            <h3>🆘 {item.name}</h3>
+        {requests.map((item) => {
+          const requestStatus =
+            getRequestStatus(item.status);
 
-            <p>📞 {item.phone}</p>
+          return (
+            <div key={item.id} style={cardStyle}>
 
-            <p>
-              📍 {item.wilaya} - {item.municipality}
-            </p>
+              <div style={topRowStyle}>
+                <h3 style={{ margin: 0 }}>
+                  🆘 {item.name}
+                </h3>
 
-            <p>🤝 {item.help_type}</p>
+                <div
+                  style={{
+                    ...statusBadge,
+                    background:
+                      requestStatus.background,
+                    color: requestStatus.color,
+                  }}
+                >
+                  {requestStatus.icon}{" "}
+                  {requestStatus.text}
+                </div>
+              </div>
 
-            <p>📝 {item.description}</p>
+              <p>📞 {item.phone}</p>
 
-            <p>
-              🔢 رقم المتابعة:{" "}
-              <strong>{item.tracking_code}</strong>
-            </p>
+              <p>
+                📍 {item.wilaya} -{" "}
+                {item.municipality}
+              </p>
 
-            <p>
-              <strong>الحالة:</strong>{" "}
-              {item.status}
-            </p>
+              <p>🤝 {item.help_type}</p>
 
-            <div style={statusButtons}>
-              <button
-                onClick={() =>
-                  updateRequestStatus(
-                    item.id,
-                    "reviewing"
-                  )
-                }
-                style={reviewButton}
-              >
-                🔎 قيد المراجعة
-              </button>
+              <p>📝 {item.description}</p>
 
-              <button
-                onClick={() =>
-                  updateRequestStatus(
-                    item.id,
-                    "approved"
-                  )
-                }
-                style={acceptButton}
-              >
-                ✅ قبول الطلب
-              </button>
+              <p>
+                🔢 رقم المتابعة:{" "}
+                <strong>{item.tracking_code}</strong>
+              </p>
 
-              <button
-                onClick={() =>
-                  updateRequestStatus(
-                    item.id,
-                    "completed"
-                  )
-                }
-                style={completeButton}
-              >
-                🎉 تمت المساعدة
-              </button>
+              <div style={statusButtons}>
+                <button
+                  onClick={() =>
+                    updateRequestStatus(
+                      item.id,
+                      "reviewing"
+                    )
+                  }
+                  style={reviewButton}
+                >
+                  🔎 قيد المراجعة
+                </button>
 
-              <button
-                onClick={() =>
-                  updateRequestStatus(
-                    item.id,
-                    "rejected"
-                  )
-                }
-                style={rejectButton}
-              >
-                ❌ رفض الطلب
-              </button>
+                <button
+                  onClick={() =>
+                    updateRequestStatus(
+                      item.id,
+                      "approved"
+                    )
+                  }
+                  style={acceptButton}
+                >
+                  ✅ قبول الطلب
+                </button>
+
+                <button
+                  onClick={() =>
+                    updateRequestStatus(
+                      item.id,
+                      "completed"
+                    )
+                  }
+                  style={completeButton}
+                >
+                  🎉 تمت المساعدة
+                </button>
+
+                <button
+                  onClick={() =>
+                    updateRequestStatus(
+                      item.id,
+                      "rejected"
+                    )
+                  }
+                  style={rejectButton}
+                >
+                  ❌ رفض الطلب
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         <h2 style={{ marginTop: "45px" }}>
           🤲 عروض المساعدة
@@ -328,15 +410,23 @@ export default function AdminPage() {
         )}
 
         {offers.map((offer) => {
-          const request = getRequestForOffer(offer);
-          const status = getOfferStatus(offer.status);
+          const request =
+            getRequestForOffer(offer);
+
+          const offerStatus =
+            getOfferStatus(offer.status);
 
           return (
-            <div key={offer.id} style={offerCardStyle}>
+            <div
+              key={offer.id}
+              style={offerCardStyle}
+            >
+
               <div style={offerHeaderStyle}>
                 <div>
                   <h3 style={{ margin: 0 }}>
-                    🤲 عرض مساعدة من {offer.name}
+                    🤲 عرض مساعدة من{" "}
+                    {offer.name}
                   </h3>
 
                   <p style={{ marginBottom: 0 }}>
@@ -347,16 +437,21 @@ export default function AdminPage() {
                 <div
                   style={{
                     ...statusBadge,
-                    background: status.background,
-                    color: status.color,
+                    background:
+                      offerStatus.background,
+                    color:
+                      offerStatus.color,
                   }}
                 >
-                  {status.icon} {status.text}
+                  {offerStatus.icon}{" "}
+                  {offerStatus.text}
                 </div>
               </div>
 
               <div style={sectionStyle}>
-                <h4>🤲 المساعدة التي يستطيع تقديمها</h4>
+                <h4>
+                  🤲 المساعدة التي يستطيع تقديمها
+                </h4>
 
                 <p>
                   <strong>النوع:</strong>{" "}
@@ -370,73 +465,98 @@ export default function AdminPage() {
               </div>
 
               <div style={requestBoxStyle}>
-                <h4>🆘 الحالة التي اختارها المتبرع</h4>
+                <h4>
+                  🆘 الحالة التي اختارها المتبرع
+                </h4>
 
                 {request ? (
                   <>
                     <p>
-                      <strong>اسم المحتاج:</strong>{" "}
+                      <strong>
+                        اسم المحتاج:
+                      </strong>{" "}
                       {request.name}
                     </p>
 
                     <p>
-                      📞 <strong>هاتف المحتاج:</strong>{" "}
+                      📞{" "}
+                      <strong>
+                        هاتف المحتاج:
+                      </strong>{" "}
                       {request.phone}
                     </p>
 
                     <p>
-                      📍 <strong>المكان:</strong>{" "}
+                      📍{" "}
+                      <strong>
+                        المكان:
+                      </strong>{" "}
                       {request.wilaya} -{" "}
                       {request.municipality}
                     </p>
 
                     <p>
-                      🤝 <strong>نوع الحاجة:</strong>{" "}
+                      🤝{" "}
+                      <strong>
+                        نوع الحاجة:
+                      </strong>{" "}
                       {request.help_type}
                     </p>
 
                     <p>
-                      📝 <strong>تفاصيل الطلب:</strong>{" "}
+                      📝{" "}
+                      <strong>
+                        تفاصيل الطلب:
+                      </strong>{" "}
                       {request.description}
                     </p>
 
                     <p>
-                      🔢 <strong>رقم المتابعة:</strong>{" "}
+                      🔢{" "}
+                      <strong>
+                        رقم المتابعة:
+                      </strong>{" "}
                       {request.tracking_code}
                     </p>
                   </>
                 ) : (
                   <p style={{ color: "#b91c1c" }}>
-                    ⚠️ لم يتم العثور على الحالة المرتبطة
-                    بهذا العرض.
+                    ⚠️ لم يتم العثور على الحالة
+                    المرتبطة بهذا العرض.
                   </p>
                 )}
               </div>
 
               <div style={offerActions}>
-                <button
-                  onClick={() =>
-                    updateOfferStatus(
-                      offer.id,
-                      "accepted"
-                    )
-                  }
-                  style={acceptButton}
-                >
-                  ✅ قبول العرض
-                </button>
 
-                <button
-                  onClick={() =>
-                    updateOfferStatus(
-                      offer.id,
-                      "rejected"
-                    )
-                  }
-                  style={rejectButton}
-                >
-                  ❌ رفض العرض
-                </button>
+                {offer.status !== "accepted" && (
+                  <button
+                    onClick={() =>
+                      updateOfferStatus(
+                        offer.id,
+                        "accepted"
+                      )
+                    }
+                    style={acceptButton}
+                  >
+                    ✅ قبول العرض
+                  </button>
+                )}
+
+                {offer.status !== "rejected" && (
+                  <button
+                    onClick={() =>
+                      updateOfferStatus(
+                        offer.id,
+                        "rejected"
+                      )
+                    }
+                    style={rejectButton}
+                  >
+                    ❌ رفض العرض
+                  </button>
+                )}
+
               </div>
             </div>
           );
@@ -464,7 +584,8 @@ const loginBoxStyle = {
   background: "#fff",
   padding: "28px",
   borderRadius: "18px",
-  boxShadow: "0 3px 15px rgba(0,0,0,0.08)",
+  boxShadow:
+    "0 3px 15px rgba(0,0,0,0.08)",
   textAlign: "center",
 };
 
@@ -472,7 +593,8 @@ const headerStyle = {
   background: "#fff",
   padding: "22px",
   borderRadius: "16px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+  boxShadow:
+    "0 2px 10px rgba(0,0,0,0.06)",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
@@ -511,7 +633,8 @@ const buttonStyle = {
 
 const statsContainer = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(180px, 1fr))",
   gap: "15px",
   marginBottom: "30px",
 };
@@ -520,7 +643,8 @@ const statCard = {
   background: "#fff",
   padding: "20px",
   borderRadius: "14px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+  boxShadow:
+    "0 2px 10px rgba(0,0,0,0.06)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -531,12 +655,21 @@ const cardStyle = {
   padding: "20px",
   margin: "15px 0",
   borderRadius: "14px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+  boxShadow:
+    "0 2px 10px rgba(0,0,0,0.08)",
 };
 
 const offerCardStyle = {
   ...cardStyle,
   borderRight: "5px solid #16a34a",
+};
+
+const topRowStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "10px",
+  flexWrap: "wrap",
 };
 
 const offerHeaderStyle = {
