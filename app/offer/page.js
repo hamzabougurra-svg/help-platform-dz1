@@ -29,6 +29,7 @@ export default function OfferPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
+    setSuccess(false);
 
     const { error } = await supabase
       .from("help_offers")
@@ -38,26 +39,47 @@ export default function OfferPage() {
 
     if (error) {
       console.error(error);
-      alert("حدث خطأ أثناء إرسال العرض.");
+      alert(`خطأ: ${error.message}`);
       return;
     }
 
     setSuccess(true);
+
+    setForm({
+      name: "",
+      phone: "",
+      help_type: "",
+      description: "",
+    });
   }
 
   return (
     <main dir="rtl" style={mainStyle}>
       <div style={boxStyle}>
-        <h1>🤲 تقديم مساعدة</h1>
+        <h1>🤲 أريد تقديم مساعدة</h1>
+
+        <p style={subtitleStyle}>
+          جزاك الله خيرًا على رغبتك في مساعدة المحتاجين 🇩🇿
+        </p>
 
         {success ? (
-          <div style={{ textAlign: "center", padding: "30px" }}>
-            <h2>✅ شكرًا لك</h2>
-            <p>تم تسجيل عرض المساعدة بنجاح.</p>
+          <div style={successStyle}>
+            <h2>✅ تم إرسال عرض المساعدة</h2>
+            <p>
+              شكرًا لك. سيتم التواصل معك عند الحاجة.
+            </p>
+
+            <button
+              onClick={() => setSuccess(false)}
+              style={buttonStyle}
+            >
+              تقديم عرض آخر
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
             <label>الاسم</label>
+
             <input
               required
               name="name"
@@ -68,17 +90,19 @@ export default function OfferPage() {
             />
 
             <label>رقم الهاتف</label>
+
             <input
               required
               name="phone"
+              type="tel"
               value={form.phone}
               onChange={handleChange}
-              type="tel"
               placeholder="اكتب رقم الهاتف"
               style={inputStyle}
             />
 
             <label>نوع المساعدة</label>
+
             <select
               required
               name="help_type"
@@ -95,12 +119,13 @@ export default function OfferPage() {
             </select>
 
             <label>تفاصيل المساعدة</label>
+
             <textarea
               required
               name="description"
               value={form.description}
               onChange={handleChange}
-              placeholder="اكتب تفاصيل المساعدة التي تريد تقديمها..."
+              placeholder="اكتب كيف تستطيع المساعدة..."
               rows="5"
               style={inputStyle}
             />
@@ -108,9 +133,14 @@ export default function OfferPage() {
             <button
               type="submit"
               disabled={loading}
-              style={buttonStyle}
+              style={{
+                ...buttonStyle,
+                opacity: loading ? 0.6 : 1,
+              }}
             >
-              {loading ? "جاري الإرسال..." : "🤲 تقديم المساعدة"}
+              {loading
+                ? "جاري الإرسال..."
+                : "🤲 إرسال عرض المساعدة"}
             </button>
           </form>
         )}
@@ -121,7 +151,7 @@ export default function OfferPage() {
 
 const mainStyle = {
   minHeight: "100vh",
-  background: "#f5f7fa",
+  background: "linear-gradient(135deg, #ecfdf5, #f8fafc)",
   padding: "30px 16px",
   fontFamily: "Arial, sans-serif",
 };
@@ -130,9 +160,16 @@ const boxStyle = {
   maxWidth: "650px",
   margin: "0 auto",
   background: "#fff",
-  padding: "25px",
-  borderRadius: "16px",
-  boxShadow: "0 3px 15px rgba(0,0,0,0.08)",
+  padding: "28px",
+  borderRadius: "18px",
+  boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
+};
+
+const subtitleStyle = {
+  textAlign: "center",
+  color: "#555",
+  lineHeight: "1.7",
+  marginBottom: "25px",
 };
 
 const inputStyle = {
@@ -151,8 +188,14 @@ const buttonStyle = {
   padding: "16px",
   border: "none",
   borderRadius: "12px",
-  fontSize: "18px",
-  cursor: "pointer",
   background: "#16a34a",
   color: "#fff",
+  fontSize: "18px",
+  fontWeight: "bold",
+  cursor: "pointer",
+};
+
+const successStyle = {
+  textAlign: "center",
+  padding: "25px 5px",
 };
