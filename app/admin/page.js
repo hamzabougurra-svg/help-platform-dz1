@@ -12,8 +12,10 @@ export default function AdminPage() {
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [requests, setRequests] = useState([]);
   const [offers, setOffers] = useState([]);
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -53,6 +55,7 @@ export default function AdminPage() {
 
   async function logout() {
     await supabase.auth.signOut();
+
     setRequests([]);
     setOffers([]);
   }
@@ -60,15 +63,17 @@ export default function AdminPage() {
   async function loadData() {
     setLoading(true);
 
-    const { data: requestData, error: requestError } = await supabase
-      .from("help_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data: requestData, error: requestError } =
+      await supabase
+        .from("help_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    const { data: offerData, error: offerError } = await supabase
-      .from("help_offers")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data: offerData, error: offerError } =
+      await supabase
+        .from("help_offers")
+        .select("*")
+        .order("created_at", { ascending: false });
 
     if (requestError) {
       console.error(requestError);
@@ -84,47 +89,44 @@ export default function AdminPage() {
     setLoading(false);
   }
 
-  async function updateStatus(id, status) {
+  async function updateRequestStatus(id, status) {
     const { error } = await supabase
       .from("help_requests")
       .update({ status })
       .eq("id", id);
 
     if (error) {
-      console.error(error);
-      alert(`تعذر تحديث الحالة: ${error.message}`);
+      alert(`تعذر تحديث حالة الطلب: ${error.message}`);
       return;
     }
 
     await loadData();
   }
 
-  function getStatusText(status) {
-    switch (status) {
-      case "new":
-        return "🆕 جديد";
+  async function updateOfferStatus(id, status) {
+    const { error } = await supabase
+      .from("help_offers")
+      .update({ status })
+      .eq("id", id);
 
-      case "reviewing":
-        return "🔎 قيد المراجعة";
-
-      case "approved":
-        return "✅ مقبول";
-
-      case "completed":
-        return "🎉 تمت المساعدة";
-
-      case "rejected":
-        return "❌ مرفوض";
-
-      default:
-        return status || "غير محدد";
+    if (error) {
+      alert(`تعذر تحديث حالة العرض: ${error.message}`);
+      return;
     }
+
+    await loadData();
   }
 
-  function getCaseForOffer(offer) {
+  function getRequestForOffer(offer) {
     return requests.find(
       (request) => request.id === offer.help_request_id
     );
+  }
+
+  function getOfferStatusLabel(status) {
+    if (status === "accepted") return "✅ مقبول";
+    if (status === "rejected") return "❌ مرفوض";
+    return "🟡 قيد الانتظار";
   }
 
   if (!session) {
@@ -166,7 +168,7 @@ export default function AdminPage() {
       <div style={containerStyle}>
         <h1>👨‍💼 لوحة الإدارة</h1>
 
-        <div style={{ marginBottom: "25px" }}>
+        <div style={topButtons}>
           <button onClick={logout} style={logoutButton}>
             تسجيل الخروج
           </button>
@@ -176,7 +178,9 @@ export default function AdminPage() {
           </button>
         </div>
 
-        <h2>🆘 طلبات المساعدة ({requests.length})</h2>
+        <h2>
+          🆘 طلبات المساعدة ({requests.length})
+        </h2>
 
         {loading && <p>جاري التحميل...</p>}
 
@@ -186,52 +190,57 @@ export default function AdminPage() {
 
         {requests.map((item) => (
           <div key={item.id} style={cardStyle}>
-            <h3>🆘 {item.name}</h3>
+            <h3>{item.name}</h3>
 
             <p>📞 {item.phone}</p>
+
             <p>
               📍 {item.wilaya} - {item.municipality}
             </p>
+
             <p>🤝 {item.help_type}</p>
+
             <p>📝 {item.description}</p>
-            <p>🔢 رقم المتابعة: {item.tracking_code}</p>
 
             <p>
-              <b>الحالة:</b> {getStatusText(item.status)}
+              🔢 رقم المتابعة:{" "}
+              <strong>{item.tracking_code}</strong>
+            </p>
+
+            <p>
+              <b>الحالة:</b>{" "}
+              {item.status || "new"}
             </p>
 
             <div style={statusButtons}>
               <button
-                onClick={() => updateStatus(item.id, "new")}
-                style={statusButton}
-              >
-                🆕 جديد
-              </button>
-
-              <button
-                onClick={() => updateStatus(item.id, "reviewing")}
-                style={statusButton}
+                onClick={() =>
+                  updateRequestStatus(item.id, "reviewing")
+                }
               >
                 🔎 قيد المراجعة
               </button>
 
               <button
-                onClick={() => updateStatus(item.id, "approved")}
-                style={statusButton}
+                onClick={() =>
+                  updateRequestStatus(item.id, "approved")
+                }
               >
                 ✅ مقبول
               </button>
 
               <button
-                onClick={() => updateStatus(item.id, "completed")}
-                style={statusButton}
+                onClick={() =>
+                  updateRequestStatus(item.id, "completed")
+                }
               >
                 🎉 تمت المساعدة
               </button>
 
               <button
-                onClick={() => updateStatus(item.id, "rejected")}
-                style={statusButton}
+                onClick={() =>
+                  updateRequestStatus(item.id, "rejected")
+                }
               >
                 ❌ مرفوض
               </button>
@@ -239,59 +248,93 @@ export default function AdminPage() {
           </div>
         ))}
 
-        <h2 style={{ marginTop: "40px" }}>
+        <h2>
           🤲 عروض المساعدة ({offers.length})
         </h2>
 
-        {!loading && offers.length === 0 && (
+        {offers.length === 0 && (
           <p>لا توجد عروض مساعدة حاليًا.</p>
         )}
 
-        {offers.map((item) => {
-          const selectedCase = getCaseForOffer(item);
+        {offers.map((offer) => {
+          const selectedRequest =
+            getRequestForOffer(offer);
 
           return (
-            <div key={item.id} style={offerCardStyle}>
-              <h3>🤲 المتبرع: {item.name}</h3>
+            <div key={offer.id} style={cardStyle}>
+              <h3>🤲 عرض من: {offer.name}</h3>
 
-              <p>📞 هاتف المتبرع: {item.phone}</p>
-              <p>🤝 نوع المساعدة: {item.help_type}</p>
-              <p>📝 تفاصيل العرض: {item.description}</p>
+              <p>📞 {offer.phone}</p>
 
-              <hr />
+              <p>
+                🤝 نوع المساعدة: {offer.help_type}
+              </p>
 
-              {selectedCase ? (
-                <>
-                  <h3>🆘 الحالة التي اختارها</h3>
+              <p>
+                📝 تفاصيل العرض: {offer.description}
+              </p>
 
+              <div style={caseBoxStyle}>
+                <h4>🆘 الحالة التي اختارها المتبرع</h4>
+
+                {selectedRequest ? (
+                  <>
+                    <p>
+                      <strong>الاسم:</strong>{" "}
+                      {selectedRequest.name}
+                    </p>
+
+                    <p>
+                      📍 {selectedRequest.wilaya} -{" "}
+                      {selectedRequest.municipality}
+                    </p>
+
+                    <p>
+                      🤝 {selectedRequest.help_type}
+                    </p>
+
+                    <p>
+                      🔢 رقم المتابعة:{" "}
+                      {selectedRequest.tracking_code}
+                    </p>
+                  </>
+                ) : (
                   <p>
-                    👤 صاحب الطلب: {selectedCase.name}
+                    ⚠️ لم يتم العثور على الحالة المرتبطة بهذا العرض.
                   </p>
+                )}
+              </div>
 
-                  <p>
-                    📍 {selectedCase.wilaya} -{" "}
-                    {selectedCase.municipality}
-                  </p>
+              <p>
+                <strong>حالة العرض:</strong>{" "}
+                {getOfferStatusLabel(offer.status)}
+              </p>
 
-                  <p>
-                    🤝 المطلوب: {selectedCase.help_type}
-                  </p>
+              <div style={statusButtons}>
+                <button
+                  onClick={() =>
+                    updateOfferStatus(
+                      offer.id,
+                      "accepted"
+                    )
+                  }
+                  style={acceptButton}
+                >
+                  ✅ قبول العرض
+                </button>
 
-                  <p>
-                    🔢 رقم المتابعة:{" "}
-                    {selectedCase.tracking_code}
-                  </p>
-
-                  <p>
-                    <b>حالة الطلب:</b>{" "}
-                    {getStatusText(selectedCase.status)}
-                  </p>
-                </>
-              ) : (
-                <p style={{ color: "#dc2626" }}>
-                  ⚠️ لم يتم العثور على الطلب المرتبط بهذا العرض.
-                </p>
-              )}
+                <button
+                  onClick={() =>
+                    updateOfferStatus(
+                      offer.id,
+                      "rejected"
+                    )
+                  }
+                  style={rejectButton}
+                >
+                  ❌ رفض العرض
+                </button>
+              </div>
             </div>
           );
         })}
@@ -341,15 +384,23 @@ const buttonStyle = {
   background: "#2563eb",
   color: "#fff",
   fontSize: "17px",
+  cursor: "pointer",
+};
+
+const topButtons = {
+  display: "flex",
+  gap: "10px",
+  marginBottom: "25px",
+  flexWrap: "wrap",
 };
 
 const logoutButton = {
   padding: "12px 20px",
-  marginLeft: "10px",
   border: "none",
   borderRadius: "10px",
   background: "#dc2626",
   color: "#fff",
+  cursor: "pointer",
 };
 
 const refreshButton = {
@@ -358,6 +409,7 @@ const refreshButton = {
   borderRadius: "10px",
   background: "#555",
   color: "#fff",
+  cursor: "pointer",
 };
 
 const cardStyle = {
@@ -368,25 +420,36 @@ const cardStyle = {
   boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
 };
 
-const offerCardStyle = {
-  background: "#ecfdf5",
-  padding: "20px",
-  margin: "15px 0",
-  borderRadius: "14px",
+const caseBoxStyle = {
+  background: "#f0fdf4",
   border: "1px solid #bbf7d0",
+  padding: "15px",
+  borderRadius: "12px",
+  marginTop: "15px",
+  marginBottom: "15px",
 };
 
 const statusButtons = {
   display: "flex",
   gap: "8px",
   flexWrap: "wrap",
+  marginTop: "15px",
 };
 
-const statusButton = {
-  padding: "10px 14px",
+const acceptButton = {
+  padding: "10px 15px",
   border: "none",
   borderRadius: "8px",
-  background: "#2563eb",
+  background: "#16a34a",
+  color: "#fff",
+  cursor: "pointer",
+};
+
+const rejectButton = {
+  padding: "10px 15px",
+  border: "none",
+  borderRadius: "8px",
+  background: "#dc2626",
   color: "#fff",
   cursor: "pointer",
 };
