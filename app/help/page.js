@@ -42,7 +42,7 @@ export default function HelpPage() {
       console.error(error);
       setResult({
         success: false,
-        message: "حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.",
+        message: `خطأ: ${error.message}`,
       });
       return;
     }
