@@ -28,16 +28,19 @@ export default function OfferPage() {
   }, []);
 
   async function loadCases() {
+    setLoadingCases(true);
+
     const { data, error } = await supabase
       .from("help_requests")
       .select(
-        "id, wilaya, municipality, help_type, description, status"
+        "id, name, wilaya, municipality, help_type, description, status, tracking_code"
       )
       .in("status", ["new", "reviewing", "approved"])
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error(error);
+      alert(`خطأ في تحميل الحالات: ${error.message}`);
     } else {
       setCases(data || []);
     }
@@ -100,7 +103,7 @@ export default function OfferPage() {
         <h1>🤲 أريد تقديم مساعدة</h1>
 
         <p style={subtitleStyle}>
-          اختر الحالة التي تستطيع مساعدتها، ثم اترك معلوماتك للتواصل معك.
+          اختر الحالة التي تستطيع مساعدتها، وساهم في نشر الخير 🇩🇿
         </p>
 
         {success ? (
@@ -116,7 +119,10 @@ export default function OfferPage() {
             </p>
 
             <button
-              onClick={() => setSuccess(false)}
+              onClick={() => {
+                setSuccess(false);
+                loadCases();
+              }}
               style={buttonStyle}
             >
               تقديم عرض مساعدة آخر
@@ -124,7 +130,9 @@ export default function OfferPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            <label>اختر الحالة</label>
+            <label>
+              <strong>🆘 اختر الحالة التي تريد مساعدتها</strong>
+            </label>
 
             <select
               required
@@ -132,22 +140,64 @@ export default function OfferPage() {
               value={form.help_request_id}
               onChange={handleChange}
               style={inputStyle}
+              disabled={loadingCases}
             >
               <option value="">
                 {loadingCases
                   ? "جاري تحميل الحالات..."
-                  : "اختر الحالة التي تريد مساعدتها"}
+                  : cases.length === 0
+                  ? "لا توجد حالات متاحة حاليًا"
+                  : "اختر الحالة"}
               </option>
 
               {cases.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.wilaya} - {item.municipality} |{" "}
-                  {item.help_type}
+                  🆘 {item.name} — {item.wilaya} -{" "}
+                  {item.municipality} — {item.help_type}
                 </option>
               ))}
             </select>
 
-            <label>الاسم</label>
+            {form.help_request_id && (
+              <div style={caseInfoStyle}>
+                {(() => {
+                  const selectedCase = cases.find(
+                    (item) => item.id === form.help_request_id
+                  );
+
+                  if (!selectedCase) return null;
+
+                  return (
+                    <>
+                      <h3>📋 تفاصيل الحالة</h3>
+
+                      <p>
+                        <strong>الاسم:</strong>{" "}
+                        {selectedCase.name}
+                      </p>
+
+                      <p>
+                        <strong>📍 المكان:</strong>{" "}
+                        {selectedCase.wilaya} -{" "}
+                        {selectedCase.municipality}
+                      </p>
+
+                      <p>
+                        <strong>🤝 نوع الحاجة:</strong>{" "}
+                        {selectedCase.help_type}
+                      </p>
+
+                      <p>
+                        <strong>📝 التفاصيل:</strong>{" "}
+                        {selectedCase.description}
+                      </p>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
+            <label>اسمك</label>
 
             <input
               required
@@ -170,7 +220,7 @@ export default function OfferPage() {
               style={inputStyle}
             />
 
-            <label>نوع المساعدة</label>
+            <label>نوع المساعدة التي تستطيع تقديمها</label>
 
             <select
               required
@@ -180,11 +230,12 @@ export default function OfferPage() {
               style={inputStyle}
             >
               <option value="">اختر نوع المساعدة</option>
-              <option value="مساعدة مالية">مساعدة مالية</option>
-              <option value="مساعدة غذائية">مساعدة غذائية</option>
-              <option value="مساعدة طبية">مساعدة طبية</option>
-              <option value="مساعدة في السكن">مساعدة في السكن</option>
-              <option value="مساعدة أخرى">مساعدة أخرى</option>
+              <option value="مساعدة مالية">💰 مساعدة مالية</option>
+              <option value="مساعدة غذائية">🍞 مساعدة غذائية</option>
+              <option value="مساعدة طبية">🏥 مساعدة طبية</option>
+              <option value="مساعدة في السكن">🏠 مساعدة في السكن</option>
+              <option value="مساعدة ملابس">👕 مساعدة ملابس</option>
+              <option value="مساعدة أخرى">🤝 مساعدة أخرى</option>
             </select>
 
             <label>تفاصيل المساعدة</label>
@@ -201,10 +252,13 @@ export default function OfferPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || loadingCases || cases.length === 0}
               style={{
                 ...buttonStyle,
-                opacity: loading ? 0.6 : 1,
+                opacity:
+                  loading || loadingCases || cases.length === 0
+                    ? 0.6
+                    : 1,
               }}
             >
               {loading
@@ -250,6 +304,16 @@ const inputStyle = {
   border: "1px solid #ddd",
   borderRadius: "10px",
   fontSize: "16px",
+  background: "#fff",
+};
+
+const caseInfoStyle = {
+  background: "#f0fdf4",
+  border: "1px solid #bbf7d0",
+  borderRadius: "12px",
+  padding: "16px",
+  marginBottom: "20px",
+  lineHeight: "1.7",
 };
 
 const buttonStyle = {
