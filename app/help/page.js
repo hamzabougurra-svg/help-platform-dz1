@@ -1,13 +1,64 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function HelpPage() {
-  const [sent, setSent] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    help_type: "",
+    description: "",
+  });
 
-  function handleSubmit(e) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  function handleChange(e) {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    setSent(true);
+    setLoading(true);
+    setResult(null);
+
+    const { data, error } = await supabase
+      .from("help_requests")
+      .insert([form])
+      .select("tracking_code")
+      .single();
+
+    setLoading(false);
+
+    if (error) {
+      console.error(error);
+      setResult({
+        success: false,
+        message: "حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.",
+      });
+      return;
+    }
+
+    setResult({
+      success: true,
+      message: `تم إرسال طلبك بنجاح! رقم المتابعة الخاص بك هو: ${data.tracking_code}`,
+    });
+
+    setForm({
+      name: "",
+      phone: "",
+      help_type: "",
+      description: "",
+    });
   }
 
   return (
@@ -32,16 +83,27 @@ export default function HelpPage() {
       >
         <h1 style={{ textAlign: "center" }}>🆘 طلب مساعدة</h1>
 
-        {sent ? (
-          <div style={{ textAlign: "center", padding: "30px 0" }}>
-            <h2>✅ تم إرسال طلبك</h2>
-            <p>سنتابع طلب المساعدة ونسعى لإيصاله إلى أهل الخير.</p>
+        {result?.success ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "30px 10px",
+            }}
+          >
+            <h2>✅ تم إرسال الطلب</h2>
+            <p>{result.message}</p>
+            <p style={{ color: "#666" }}>
+              احتفظ برقم المتابعة لمتابعة حالة طلبك.
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
             <label>الاسم</label>
             <input
               required
+              name="name"
+              value={form.name}
+              onChange={handleChange}
               type="text"
               placeholder="اكتب اسمك"
               style={inputStyle}
@@ -50,35 +112,64 @@ export default function HelpPage() {
             <label>رقم الهاتف</label>
             <input
               required
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
               type="tel"
               placeholder="اكتب رقم الهاتف"
               style={inputStyle}
             />
 
             <label>نوع المساعدة المطلوبة</label>
-            <select required style={inputStyle} defaultValue="">
-              <option value="" disabled>
-                اختر نوع المساعدة
-              </option>
-              <option>مساعدة مالية</option>
-              <option>مساعدة غذائية</option>
-              <option>مساعدة طبية</option>
-              <option>مساعدة في السكن</option>
-              <option>مساعدة أخرى</option>
+            <select
+              required
+              name="help_type"
+              value={form.help_type}
+              onChange={handleChange}
+              style={inputStyle}
+            >
+              <option value="">اختر نوع المساعدة</option>
+              <option value="مساعدة مالية">مساعدة مالية</option>
+              <option value="مساعدة غذائية">مساعدة غذائية</option>
+              <option value="مساعدة طبية">مساعدة طبية</option>
+              <option value="مساعدة في السكن">مساعدة في السكن</option>
+              <option value="مساعدة أخرى">مساعدة أخرى</option>
             </select>
 
             <label>شرح الطلب</label>
             <textarea
               required
+              name="description"
+              value={form.description}
+              onChange={handleChange}
               placeholder="اشرح لنا حاجتك..."
               rows="5"
               style={inputStyle}
             />
 
-            <button type="submit" style={buttonStyle}>
-              إرسال طلب المساعدة
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                ...buttonStyle,
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading ? "جاري الإرسال..." : "إرسال طلب المساعدة"}
             </button>
           </form>
+        )}
+
+        {result && !result.success && (
+          <p
+            style={{
+              color: "red",
+              textAlign: "center",
+              marginTop: "20px",
+            }}
+          >
+            {result.message}
+          </p>
         )}
       </div>
     </main>
