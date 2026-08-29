@@ -32,7 +32,7 @@ export default function HelpPage() {
 
     const { data, error } = await supabase
       .from("help_requests")
-      .insert([form])
+      .insert([{ ...form, status: "new" }])
       .select("tracking_code")
       .single();
 
