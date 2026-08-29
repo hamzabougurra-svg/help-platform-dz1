@@ -9,28 +9,77 @@ export default function RootLayout({ children }) {
       <body
         style={{
           margin: 0,
-          position: "relative",
           minHeight: "100vh",
+          position: "relative",
         }}
       >
+        {/* العلامة المائية */}
         <div
           style={{
             position: "fixed",
             inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             pointerEvents: "none",
-            zIndex: 9999,
-            fontSize: "clamp(28px, 7vw, 80px)",
-            fontWeight: "bold",
-            color: "rgba(0, 0, 0, 0.06)",
-            transform: "rotate(-30deg)",
-            whiteSpace: "nowrap",
-            userSelect: "none",
+            zIndex: 0,
+            overflow: "hidden",
+            opacity: 0.055,
           }}
         >
-          HAMZA BOUGUERRA
+          <div
+            style={{
+              position: "absolute",
+              top: "18%",
+              left: "8%",
+              transform: "rotate(-18deg)",
+              fontSize: "18px",
+              fontWeight: "bold",
+              color: "#166534",
+              whiteSpace: "nowrap",
+            }}
+          >
+            🤲 منصة المساعدة 🇩🇿
+            <br />
+            <span style={{ fontSize: "12px" }}>
+              HAMZA BOUGUERRA
+            </span>
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              top: "48%",
+              right: "10%",
+              transform: "rotate(-18deg)",
+              fontSize: "18px",
+              fontWeight: "bold",
+              color: "#166534",
+              whiteSpace: "nowrap",
+            }}
+          >
+            🤲 منصة المساعدة 🇩🇿
+            <br />
+            <span style={{ fontSize: "12px" }}>
+              HAMZA BOUGUERRA
+            </span>
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              bottom: "12%",
+              left: "15%",
+              transform: "rotate(-18deg)",
+              fontSize: "18px",
+              fontWeight: "bold",
+              color: "#166534",
+              whiteSpace: "nowrap",
+            }}
+          >
+            🤲 منصة المساعدة 🇩🇿
+            <br />
+            <span style={{ fontSize: "12px" }}>
+              HAMZA BOUGUERRA
+            </span>
+          </div>
         </div>
 
         <div style={{ position: "relative", zIndex: 1 }}>
