@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -9,15 +9,41 @@ const supabase = createClient(
 );
 
 export default function OfferPage() {
+  const [cases, setCases] = useState([]);
+  const [loadingCases, setLoadingCases] = useState(true);
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
     help_type: "",
     description: "",
+    help_request_id: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    loadCases();
+  }, []);
+
+  async function loadCases() {
+    const { data, error } = await supabase
+      .from("help_requests")
+      .select(
+        "id, wilaya, municipality, help_type, description, status"
+      )
+      .in("status", ["new", "reviewing", "approved"])
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+    } else {
+      setCases(data || []);
+    }
+
+    setLoadingCases(false);
+  }
 
   function handleChange(e) {
     setForm({
@@ -28,12 +54,26 @@ export default function OfferPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (!form.help_request_id) {
+      alert("يرجى اختيار الحالة التي تريد مساعدتها.");
+      return;
+    }
+
     setLoading(true);
     setSuccess(false);
 
     const { error } = await supabase
       .from("help_offers")
-      .insert([form]);
+      .insert([
+        {
+          name: form.name,
+          phone: form.phone,
+          help_type: form.help_type,
+          description: form.description,
+          help_request_id: form.help_request_id,
+        },
+      ]);
 
     setLoading(false);
 
@@ -50,6 +90,7 @@ export default function OfferPage() {
       phone: "",
       help_type: "",
       description: "",
+      help_request_id: "",
     });
   }
 
@@ -59,25 +100,53 @@ export default function OfferPage() {
         <h1>🤲 أريد تقديم مساعدة</h1>
 
         <p style={subtitleStyle}>
-          جزاك الله خيرًا على رغبتك في مساعدة المحتاجين 🇩🇿
+          اختر الحالة التي تستطيع مساعدتها، ثم اترك معلوماتك للتواصل معك.
         </p>
 
         {success ? (
           <div style={successStyle}>
             <h2>✅ تم إرسال عرض المساعدة</h2>
+
             <p>
-              شكرًا لك. سيتم التواصل معك عند الحاجة.
+              جزاك الله خيرًا ❤️
+            </p>
+
+            <p>
+              تم تسجيل عرضك بنجاح، وسيتم التواصل معك عند الحاجة.
             </p>
 
             <button
               onClick={() => setSuccess(false)}
               style={buttonStyle}
             >
-              تقديم عرض آخر
+              تقديم عرض مساعدة آخر
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
+            <label>اختر الحالة</label>
+
+            <select
+              required
+              name="help_request_id"
+              value={form.help_request_id}
+              onChange={handleChange}
+              style={inputStyle}
+            >
+              <option value="">
+                {loadingCases
+                  ? "جاري تحميل الحالات..."
+                  : "اختر الحالة التي تريد مساعدتها"}
+              </option>
+
+              {cases.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.wilaya} - {item.municipality} |{" "}
+                  {item.help_type}
+                </option>
+              ))}
+            </select>
+
             <label>الاسم</label>
 
             <input
