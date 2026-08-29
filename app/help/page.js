@@ -51,4 +51,58 @@ export default function HelpPage() {
             <input
               required
               type="tel"
-              placeholder
+              placeholder="اكتب رقم الهاتف"
+              style={inputStyle}
+            />
+
+            <label>نوع المساعدة المطلوبة</label>
+            <select required style={inputStyle} defaultValue="">
+              <option value="" disabled>
+                اختر نوع المساعدة
+              </option>
+              <option>مساعدة مالية</option>
+              <option>مساعدة غذائية</option>
+              <option>مساعدة طبية</option>
+              <option>مساعدة في السكن</option>
+              <option>مساعدة أخرى</option>
+            </select>
+
+            <label>شرح الطلب</label>
+            <textarea
+              required
+              placeholder="اشرح لنا حاجتك..."
+              rows="5"
+              style={inputStyle}
+            />
+
+            <button type="submit" style={buttonStyle}>
+              إرسال طلب المساعدة
+            </button>
+          </form>
+        )}
+      </div>
+    </main>
+  );
+}
+
+const inputStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "14px",
+  marginTop: "8px",
+  marginBottom: "18px",
+  border: "1px solid #ddd",
+  borderRadius: "10px",
+  fontSize: "16px",
+};
+
+const buttonStyle = {
+  width: "100%",
+  padding: "16px",
+  border: "none",
+  borderRadius: "12px",
+  fontSize: "18px",
+  cursor: "pointer",
+  background: "#2563eb",
+  color: "#fff",
+};
