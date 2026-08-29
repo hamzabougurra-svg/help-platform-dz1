@@ -8,6 +8,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+function phoneNumber(phone) {
+  if (!phone) return "";
+  return phone.replace(/\D/g, "").replace(/^0/, "213");
+}
+
 export default function AdminPage() {
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
@@ -46,13 +51,16 @@ export default function AdminPage() {
   async function login(e) {
     e.preventDefault();
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
     if (error) {
-      alert("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+      alert(
+        "البريد الإلكتروني أو كلمة المرور غير صحيحة."
+      );
     }
   }
 
@@ -65,31 +73,40 @@ export default function AdminPage() {
   async function loadData() {
     setLoading(true);
 
-    const { data: requestData, error: requestError } =
-      await supabase
-        .from("help_requests")
-        .select("*")
-        .order("created_at", { ascending: false });
+    const {
+      data: requestData,
+      error: requestError,
+    } = await supabase
+      .from("help_requests")
+      .select("*")
+      .order("created_at", {
+        ascending: false,
+      });
 
-    const { data: offerData, error: offerError } =
-      await supabase
-        .from("help_offers")
-        .select("*")
-        .order("created_at", { ascending: false });
+    const {
+      data: offerData,
+      error: offerError,
+    } = await supabase
+      .from("help_offers")
+      .select("*")
+      .order("created_at", {
+        ascending: false,
+      });
 
     if (requestError) {
-      console.error(requestError);
-      alert(`خطأ في تحميل الطلبات: ${requestError.message}`);
+      alert(
+        `خطأ في تحميل الطلبات: ${requestError.message}`
+      );
     }
 
     if (offerError) {
-      console.error(offerError);
-      alert(`خطأ في تحميل العروض: ${offerError.message}`);
+      alert(
+        `خطأ في تحميل العروض: ${offerError.message}`
+      );
     }
 
     setRequests(requestData || []);
     setOffers(offerData || []);
-
     setLoading(false);
   }
 
@@ -100,7 +117,9 @@ export default function AdminPage() {
       .eq("id", id);
 
     if (error) {
-      alert(`تعذر تحديث حالة الطلب: ${error.message}`);
+      alert(
+        `تعذر تحديث حالة الطلب: ${error.message}`
+      );
       return;
     }
 
@@ -123,7 +142,9 @@ export default function AdminPage() {
       .eq("id", id);
 
     if (error) {
-      alert(`تعذر تحديث حالة العرض: ${error.message}`);
+      alert(
+        `تعذر تحديث حالة العرض: ${error.message}`
+      );
       return;
     }
 
@@ -132,7 +153,8 @@ export default function AdminPage() {
 
   function getRequestForOffer(offer) {
     return requests.find(
-      (request) => request.id === offer.help_request_id
+      (request) =>
+        request.id === offer.help_request_id
     );
   }
 
@@ -207,67 +229,76 @@ export default function AdminPage() {
     ),
   ].sort();
 
-  const filteredRequests = requests.filter((item) => {
-    const text = `
-      ${item.name || ""}
-      ${item.phone || ""}
-      ${item.tracking_code || ""}
-      ${item.help_type || ""}
-      ${item.wilaya || ""}
-      ${item.municipality || ""}
-      ${item.description || ""}
-    `.toLowerCase();
+  const filteredRequests =
+    requests.filter((item) => {
+      const text = `
+        ${item.name || ""}
+        ${item.phone || ""}
+        ${item.tracking_code || ""}
+        ${item.help_type || ""}
+        ${item.wilaya || ""}
+        ${item.municipality || ""}
+        ${item.description || ""}
+      `.toLowerCase();
 
-    const matchesSearch = text.includes(
-      search.toLowerCase().trim()
-    );
+      const matchesSearch =
+        text.includes(
+          search.toLowerCase().trim()
+        );
 
-    const matchesWilaya =
-      !wilayaFilter ||
-      item.wilaya === wilayaFilter;
+      const matchesWilaya =
+        !wilayaFilter ||
+        item.wilaya === wilayaFilter;
 
-    const matchesStatus =
-      !statusFilter ||
-      item.status === statusFilter;
+      const matchesStatus =
+        !statusFilter ||
+        item.status === statusFilter;
 
-    return (
-      matchesSearch &&
-      matchesWilaya &&
-      matchesStatus
-    );
-  });
+      return (
+        matchesSearch &&
+        matchesWilaya &&
+        matchesStatus
+      );
+    });
 
-  const pendingRequests = requests.filter(
-    (item) =>
-      item.status === "reviewing" ||
-      item.status === "new"
-  ).length;
+  const pendingRequests =
+    requests.filter(
+      (item) =>
+        item.status === "reviewing" ||
+        item.status === "new"
+    ).length;
 
-  const approvedRequests = requests.filter(
-    (item) => item.status === "approved"
-  ).length;
+  const approvedRequests =
+    requests.filter(
+      (item) => item.status === "approved"
+    ).length;
 
-  const completedRequests = requests.filter(
-    (item) => item.status === "completed"
-  ).length;
+  const completedRequests =
+    requests.filter(
+      (item) => item.status === "completed"
+    ).length;
 
-  const rejectedRequests = requests.filter(
-    (item) => item.status === "rejected"
-  ).length;
+  const rejectedRequests =
+    requests.filter(
+      (item) => item.status === "rejected"
+    ).length;
 
-  const pendingOffers = offers.filter(
-    (item) =>
-      !item.status ||
-      item.status === "pending"
-  ).length;
+  const pendingOffers =
+    offers.filter(
+      (item) =>
+        !item.status ||
+        item.status === "pending"
+    ).length;
 
-  const acceptedOffers = offers.filter(
-    (item) => item.status === "accepted"
-  ).length;
+  const acceptedOffers =
+    offers.filter(
+      (item) => item.status === "accepted"
+    ).length;
 
-  const rejectedOffers = offers.filter(
-    (item) => item.status === "rejected"
-  ).length;
+  const rejectedOffers =
+    offers.filter(
+      (item) => item.status === "rejected"
+    ).length;
 
   if (!session) {
     return (
@@ -387,6 +418,12 @@ export default function AdminPage() {
           </div>
 
           <div style={statCard}>
+            <strong>🟡</strong>
+            <span>عروض قيد الانتظار</span>
+            <b>{pendingOffers}</b>
+          </div>
+
+          <div style={statCard}>
             <strong>🤝</strong>
             <span>عروض مقبولة</span>
             <b>{acceptedOffers}</b>
@@ -408,7 +445,7 @@ export default function AdminPage() {
 
           <input
             type="text"
-            placeholder="🔎 ابحث بالاسم أو الهاتف أو رقم المتابعة..."
+            placeholder="🔎 الاسم أو الهاتف أو رقم المتابعة..."
             value={search}
             onChange={(e) =>
               setSearch(e.target.value)
@@ -480,7 +517,7 @@ export default function AdminPage() {
               }}
               style={clearButton}
             >
-              🧹 مسح البحث والتصفية
+              🧹 مسح البحث
             </button>
           )}
 
@@ -502,12 +539,12 @@ export default function AdminPage() {
         {!loading &&
           filteredRequests.length === 0 && (
             <div style={emptyStyle}>
-              لا توجد طلبات مطابقة للبحث.
+              لا توجد طلبات مطابقة.
             </div>
           )}
 
         {filteredRequests.map((item) => {
-          const requestStatus =
+          const status =
             getRequestStatus(item.status);
 
           return (
@@ -517,7 +554,6 @@ export default function AdminPage() {
             >
 
               <div style={topRowStyle}>
-
                 <h3 style={{ margin: 0 }}>
                   🆘 {item.name}
                 </h3>
@@ -526,18 +562,36 @@ export default function AdminPage() {
                   style={{
                     ...statusBadge,
                     background:
-                      requestStatus.background,
-                    color:
-                      requestStatus.color,
+                      status.background,
+                    color: status.color,
                   }}
                 >
-                  {requestStatus.icon}{" "}
-                  {requestStatus.text}
+                  {status.icon}{" "}
+                  {status.text}
                 </div>
-
               </div>
 
               <p>📞 {item.phone}</p>
+
+              <div style={contactButtons}>
+                <a
+                  href={`tel:${item.phone}`}
+                  style={callButton}
+                >
+                  📞 اتصال بالمحتاج
+                </a>
+
+                <a
+                  href={`https://wa.me/${phoneNumber(
+                    item.phone
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={whatsappButton}
+                >
+                  💬 واتساب
+                </a>
+              </div>
 
               <p>
                 📍 {item.wilaya} -{" "}
@@ -610,6 +664,7 @@ export default function AdminPage() {
                 </button>
 
               </div>
+
             </div>
           );
         })}
@@ -628,7 +683,7 @@ export default function AdminPage() {
           const request =
             getRequestForOffer(offer);
 
-          const offerStatus =
+          const status =
             getOfferStatus(offer.status);
 
           return (
@@ -652,19 +707,38 @@ export default function AdminPage() {
                   >
                     📞 {offer.phone}
                   </p>
+
+                  <div style={contactButtons}>
+                    <a
+                      href={`tel:${offer.phone}`}
+                      style={callButton}
+                    >
+                      📞 اتصال بالمتبرع
+                    </a>
+
+                    <a
+                      href={`https://wa.me/${phoneNumber(
+                        offer.phone
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={whatsappButton}
+                    >
+                      💬 واتساب
+                    </a>
+                  </div>
                 </div>
 
                 <div
                   style={{
                     ...statusBadge,
                     background:
-                      offerStatus.background,
-                    color:
-                      offerStatus.color,
+                      status.background,
+                    color: status.color,
                   }}
                 >
-                  {offerStatus.icon}{" "}
-                  {offerStatus.text}
+                  {status.icon}{" "}
+                  {status.text}
                 </div>
 
               </div>
@@ -676,16 +750,12 @@ export default function AdminPage() {
                 </h4>
 
                 <p>
-                  <strong>
-                    النوع:
-                  </strong>{" "}
+                  <strong>النوع:</strong>{" "}
                   {offer.help_type}
                 </p>
 
                 <p>
-                  <strong>
-                    التفاصيل:
-                  </strong>{" "}
+                  <strong>التفاصيل:</strong>{" "}
                   {offer.description}
                 </p>
 
@@ -713,6 +783,26 @@ export default function AdminPage() {
                       </strong>{" "}
                       {request.phone}
                     </p>
+
+                    <div style={contactButtons}>
+                      <a
+                        href={`tel:${request.phone}`}
+                        style={callButton}
+                      >
+                        📞 اتصال بالمحتاج
+                      </a>
+
+                      <a
+                        href={`https://wa.me/${phoneNumber(
+                          request.phone
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={whatsappButton}
+                      >
+                        💬 واتساب
+                      </a>
+                    </div>
 
                     <p>
                       📍{" "}
@@ -753,8 +843,8 @@ export default function AdminPage() {
                       color: "#b91c1c",
                     }}
                   >
-                    ⚠️ لم يتم العثور على
-                    الحالة المرتبطة بهذا العرض.
+                    ⚠️ لم يتم العثور على الحالة
+                    المرتبطة بهذا العرض.
                   </p>
                 )}
 
@@ -950,6 +1040,34 @@ const statusBadge = {
   borderRadius: "20px",
   fontWeight: "bold",
   whiteSpace: "nowrap",
+};
+
+const contactButtons = {
+  display: "flex",
+  gap: "8px",
+  flexWrap: "wrap",
+  marginTop: "10px",
+  marginBottom: "10px",
+};
+
+const callButton = {
+  display: "inline-block",
+  padding: "10px 14px",
+  borderRadius: "8px",
+  background: "#2563eb",
+  color: "#fff",
+  textDecoration: "none",
+  fontWeight: "bold",
+};
+
+const whatsappButton = {
+  display: "inline-block",
+  padding: "10px 14px",
+  borderRadius: "8px",
+  background: "#16a34a",
+  color: "#fff",
+  textDecoration: "none",
+  fontWeight: "bold",
 };
 
 const sectionStyle = {
