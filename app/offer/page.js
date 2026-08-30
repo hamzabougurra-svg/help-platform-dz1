@@ -35,7 +35,6 @@ export default function OfferPage() {
       .select(
         "id, wilaya, municipality, help_type, description, status, tracking_code"
       )
-      .in("status", ["reviewing", "approved"])
       .order("created_at", { ascending: false });
 
     if (error) {
