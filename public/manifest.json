@@ -1,0 +1,11 @@
+{
+  "name": "منصة يد العون",
+  "short_name": "يد العون",
+  "description": "منصة لربط المحتاجين بأهل الخير في الجزائر",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#2563eb",
+  "lang": "ar",
+  "dir": "rtl"
+}
