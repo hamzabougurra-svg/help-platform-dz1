@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "latest",
+    "geoalgeria": "2.0.0",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest"
