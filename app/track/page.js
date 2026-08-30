@@ -10,68 +10,121 @@ const supabase = createClient(
 
 export default function TrackPage() {
   const [code, setCode] = useState("");
-  const [request, setRequest] = useState(null);
-  const [message, setMessage] = useState("");
+  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  async function handleSearch(e) {
+  async function searchRequest(e) {
     e.preventDefault();
+
     setLoading(true);
-    setRequest(null);
-    setMessage("");
+    setResult(null);
+    setError("");
+
+    const trackingCode = code.trim().toUpperCase();
 
     const { data, error } = await supabase
       .from("help_requests")
-      .select("tracking_code, name, wilaya, municipality, help_type, status")
-      .eq("tracking_code", code.trim())
-      .single();
+      .select(
+        "name, wilaya, municipality, help_type, description, status, tracking_code"
+      )
+      .eq("tracking_code", trackingCode)
+      .maybeSingle();
 
     setLoading(false);
 
-    if (error || !data) {
-      setMessage("لم يتم العثور على طلب بهذا الرقم.");
+    if (error) {
+      setError("حدث خطأ أثناء البحث. حاول مرة أخرى.");
       return;
     }
 
-    setRequest(data);
+    if (!data) {
+      setError("❌ لم نجد طلبًا بهذا الرقم.");
+      return;
+    }
+
+    setResult(data);
+  }
+
+  function statusText(status) {
+    if (status === "approved") return "✅ تم قبول الطلب";
+    if (status === "completed") return "🎉 تمت المساعدة";
+    if (status === "rejected") return "❌ تم رفض الطلب";
+    if (status === "reviewing") return "🔎 الطلب قيد المراجعة";
+    return "🆕 الطلب جديد";
   }
 
   return (
     <main dir="rtl" style={mainStyle}>
       <div style={boxStyle}>
-        <h1>🔎 متابعة طلب مساعدة</h1>
+        <h1>🔎 متابعة طلب المساعدة</h1>
 
-        <form onSubmit={handleSearch}>
+        <p style={subtitleStyle}>
+          أدخل رقم المتابعة الخاص بك لمعرفة حالة طلبك 🇩🇿
+        </p>
+
+        <form onSubmit={searchRequest}>
           <input
             required
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="أدخل رقم المتابعة"
+            placeholder="مثال: DZ-7E0F0CB8"
             style={inputStyle}
           />
 
-          <button disabled={loading} style={buttonStyle}>
-            {loading ? "جاري البحث..." : "متابعة الطلب"}
+          <button
+            type="submit"
+            disabled={loading}
+            style={buttonStyle}
+          >
+            {loading ? "جاري البحث..." : "🔎 متابعة الطلب"}
           </button>
         </form>
 
-        {message && (
-          <p style={{ color: "red", textAlign: "center" }}>
-            {message}
-          </p>
+        {error && (
+          <div style={errorStyle}>
+            {error}
+          </div>
         )}
 
-        {request && (
+        {result && (
           <div style={resultStyle}>
-            <h2>✅ تم العثور على طلبك</h2>
-            <p><b>رقم المتابعة:</b> {request.tracking_code}</p>
-            <p><b>الاسم:</b> {request.name}</p>
-            <p><b>الولاية:</b> {request.wilaya}</p>
-            <p><b>البلدية:</b> {request.municipality}</p>
-            <p><b>نوع المساعدة:</b> {request.help_type}</p>
+            <h2>📋 معلومات الطلب</h2>
+
+            <div style={statusStyle}>
+              {statusText(result.status)}
+            </div>
+
             <p>
-              <b>الحالة:</b>{" "}
-              {request.status || "قيد المراجعة"}
+              <strong>🔢 رقم المتابعة:</strong>{" "}
+              {result.tracking_code}
+            </p>
+
+            <p>
+              <strong>📍 الولاية:</strong>{" "}
+              {result.wilaya}
+            </p>
+
+            <p>
+              <strong>🏘️ البلدية:</strong>{" "}
+              {result.municipality}
+            </p>
+
+            <p>
+              <strong>🤝 نوع المساعدة:</strong>{" "}
+              {result.help_type}
+            </p>
+
+            <p>
+              <strong>📝 تفاصيل الطلب:</strong>
+            </p>
+
+            <p style={descriptionStyle}>
+              {result.description}
+            </p>
+
+            <p style={privacyStyle}>
+              🔒 معلوماتك الشخصية محمية.
             </p>
           </div>
         )}
@@ -82,7 +135,7 @@ export default function TrackPage() {
 
 const mainStyle = {
   minHeight: "100vh",
-  background: "#f5f7fa",
+  background: "linear-gradient(135deg, #ecfdf5, #f8fafc)",
   padding: "30px 16px",
   fontFamily: "Arial, sans-serif",
 };
@@ -91,17 +144,23 @@ const boxStyle = {
   maxWidth: "650px",
   margin: "0 auto",
   background: "#fff",
-  padding: "25px",
-  borderRadius: "16px",
-  boxShadow: "0 3px 15px rgba(0,0,0,0.08)",
+  padding: "28px",
+  borderRadius: "18px",
+  boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
+};
+
+const subtitleStyle = {
   textAlign: "center",
+  color: "#555",
+  lineHeight: "1.7",
+  marginBottom: "25px",
 };
 
 const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
   padding: "15px",
-  margin: "20px 0 15px",
+  marginBottom: "12px",
   border: "1px solid #ddd",
   borderRadius: "10px",
   fontSize: "17px",
@@ -109,19 +168,50 @@ const inputStyle = {
 
 const buttonStyle = {
   width: "100%",
-  padding: "16px",
+  padding: "15px",
   border: "none",
-  borderRadius: "12px",
-  fontSize: "18px",
-  cursor: "pointer",
-  background: "#2563eb",
+  borderRadius: "10px",
+  background: "#16a34a",
   color: "#fff",
+  fontSize: "18px",
+  fontWeight: "bold",
 };
 
 const resultStyle = {
   marginTop: "25px",
   padding: "20px",
-  background: "#f5f7fa",
-  borderRadius: "12px",
-  textAlign: "right",
+  background: "#f0fdf4",
+  border: "1px solid #bbf7d0",
+  borderRadius: "14px",
+  lineHeight: "1.8",
+};
+
+const statusStyle = {
+  display: "inline-block",
+  padding: "10px 15px",
+  marginBottom: "12px",
+  borderRadius: "10px",
+  background: "#dcfce7",
+  color: "#166534",
+  fontWeight: "bold",
+};
+
+const errorStyle = {
+  marginTop: "18px",
+  padding: "14px",
+  borderRadius: "10px",
+  background: "#fee2e2",
+  color: "#991b1b",
+  textAlign: "center",
+};
+
+const descriptionStyle = {
+  background: "#fff",
+  padding: "12px",
+  borderRadius: "10px",
+};
+
+const privacyStyle = {
+  color: "#666",
+  fontSize: "14px",
 };
