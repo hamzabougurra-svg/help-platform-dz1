@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import dz from "geoalgeria";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -17,52 +18,14 @@ export default function HelpPage() {
     help_type: "",
     description: "",
   });
-  const [wilayas, setWilayas] = useState([]);
-  const [communes, setCommunes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [locationsLoading, setLocationsLoading] = useState(true);
   const [result, setResult] = useState(null);
 
-  useEffect(() => {
-    async function loadWilayas() {
-      const { data, error } = await supabase
-        .from("wilayas")
-        .select("id, name")
-        .order("id");
-      if (error) {
-        console.error(error);
-        setResult({ success: false, message: "تعذر تحميل قائمة الولايات." });
-      } else {
-        setWilayas(data || []);
-      }
-      setLocationsLoading(false);
-    }
-    loadWilayas();
-  }, []);
-
-  useEffect(() => {
-    async function loadCommunes() {
-      if (!form.wilaya) {
-        setCommunes([]);
-        return;
-      }
-      const selectedWilaya = wilayas.find((item) => String(item.id) === form.wilaya);
-      if (!selectedWilaya) return;
-
-      const { data, error } = await supabase
-        .from("communes")
-        .select("id, name, wilaya_id")
-        .eq("wilaya_id", selectedWilaya.id)
-        .order("name");
-      if (error) {
-        console.error(error);
-        setResult({ success: false, message: "تعذر تحميل قائمة البلديات." });
-        return;
-      }
-      setCommunes(data || []);
-    }
-    loadCommunes();
-  }, [form.wilaya, wilayas]);
+  const wilayas = dz.wilayas;
+  const communes = useMemo(() => {
+    if (!form.wilaya) return [];
+    return dz.getCommunesByWilaya(Number(form.wilaya));
+  }, [form.wilaya]);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -78,9 +41,22 @@ export default function HelpPage() {
     setLoading(true);
     setResult(null);
 
+    const selectedWilaya = dz.getWilaya(Number(form.wilaya));
+    const selectedCommune = communes.find(
+      (item) => String(item.code) === form.municipality
+    );
+
+    const payload = {
+      ...form,
+      wilaya: selectedWilaya?.name_ar || selectedWilaya?.name_fr || form.wilaya,
+      municipality:
+        selectedCommune?.name_ar || selectedCommune?.name_fr || form.municipality,
+      status: "new",
+    };
+
     const { data, error } = await supabase
       .from("help_requests")
-      .insert([{ ...form, status: "new" }])
+      .insert([payload])
       .select("tracking_code")
       .single();
 
@@ -97,7 +73,6 @@ export default function HelpPage() {
       message: `تم إرسال طلبك بنجاح ✅ رقم المتابعة الخاص بك هو: ${data.tracking_code}`,
     });
     setForm({ name: "", phone: "", wilaya: "", municipality: "", help_type: "", description: "" });
-    setCommunes([]);
   }
 
   return (
@@ -120,18 +95,22 @@ export default function HelpPage() {
             <input required name="phone" value={form.phone} onChange={handleChange} type="tel" inputMode="tel" placeholder="اكتب رقم الهاتف" style={inputStyle} />
 
             <label>الولاية</label>
-            <select required name="wilaya" value={form.wilaya} onChange={handleChange} style={inputStyle} disabled={locationsLoading}>
-              <option value="">{locationsLoading ? "جاري تحميل الولايات..." : "اختر الولاية"}</option>
+            <select required name="wilaya" value={form.wilaya} onChange={handleChange} style={inputStyle}>
+              <option value="">اختر الولاية — 69 ولاية</option>
               {wilayas.map((wilaya) => (
-                <option key={wilaya.id} value={wilaya.id}>{wilaya.name}</option>
+                <option key={wilaya.code} value={wilaya.code}>
+                  {wilaya.code} — {wilaya.name_ar}
+                </option>
               ))}
             </select>
 
             <label>البلدية</label>
-            <select required name="municipality" value={form.municipality} onChange={handleChange} style={inputStyle} disabled={!form.wilaya || communes.length === 0}>
-              <option value="">{form.wilaya ? "اختر البلدية" : "اختر الولاية أولًا"}</option>
+            <select required name="municipality" value={form.municipality} onChange={handleChange} style={inputStyle} disabled={!form.wilaya}>
+              <option value="">{form.wilaya ? `اختر البلدية — ${communes.length} بلدية` : "اختر الولاية أولًا"}</option>
               {communes.map((commune) => (
-                <option key={commune.id} value={commune.name}>{commune.name}</option>
+                <option key={commune.code} value={commune.code}>
+                  {commune.name_ar || commune.name_fr}
+                </option>
               ))}
             </select>
 
@@ -148,7 +127,7 @@ export default function HelpPage() {
             <label>شرح الطلب</label>
             <textarea required name="description" value={form.description} onChange={handleChange} placeholder="اشرح لنا حاجتك..." rows="5" style={inputStyle} />
 
-            <button type="submit" disabled={loading || locationsLoading} style={{ ...buttonStyle, opacity: loading ? 0.6 : 1 }}>
+            <button type="submit" disabled={loading} style={{ ...buttonStyle, opacity: loading ? 0.6 : 1 }}>
               {loading ? "جاري الإرسال..." : "إرسال طلب المساعدة"}
             </button>
           </form>
