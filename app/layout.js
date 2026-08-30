@@ -1,8 +1,8 @@
 export const metadata = {
-  title: "منصة المساعدة",
+  title: "منصة يد العون",
   description: "منصة خيرية للمساعدة والتكافل في الجزائر",
+  manifest: "/manifest.json",
 };
-
 export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl">
