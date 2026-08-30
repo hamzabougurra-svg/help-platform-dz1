@@ -9,6 +9,10 @@ export default function Home() {
 
         <h1 style={titleStyle}>منصة يد العون</h1>
 
+        <div style={brandStyle}>
+          🇩🇿 HAMZA BOUGUERRA
+        </div>
+
         <p style={subtitleStyle}>
           معًا نساعد من يحتاج، ونصنع أثرًا جميلًا في مجتمعنا 🇩🇿
         </p>
@@ -17,30 +21,55 @@ export default function Home() {
 
           <a href="/help" style={buttonBlue}>
             🆘 أحتاج إلى مساعدة
-            <span>اطلب المساعدة بكل سهولة</span>
+            <span style={buttonText}>
+              اطلب المساعدة بكل سهولة
+            </span>
           </a>
 
           <a href="/offer" style={buttonGreen}>
             🤲 أريد تقديم مساعدة
-            <span>ساهم في مساعدة محتاج</span>
+            <span style={buttonText}>
+              ساهم في مساعدة محتاج
+            </span>
           </a>
 
           <a href="/track" style={buttonOrange}>
             🔎 متابعة طلب مساعدة
-            <span>تابع حالة طلبك برقم المتابعة</span>
+            <span style={buttonText}>
+              تابع حالة طلبك برقم المتابعة
+            </span>
+          </a>
+
+          <a href="/admin" style={buttonDark}>
+            👨‍💼 لوحة الإدارة
+            <span style={buttonText}>
+              إدارة طلبات وعروض المساعدة
+            </span>
           </a>
 
         </div>
 
         <div style={infoBox}>
-          <strong>💚 الخير يبدأ بخطوة</strong>
-          <p>
-            هدفنا ربط الأشخاص المحتاجين بأهل الخير بطريقة سهلة وآمنة.
+          <strong style={{ fontSize: "20px" }}>
+            💚 الخير يبدأ بخطوة
+          </strong>
+
+          <p style={{ lineHeight: "1.8" }}>
+            هدفنا ربط الأشخاص المحتاجين بأهل الخير
+            بطريقة سهلة وآمنة.
+          </p>
+
+          <p style={securityText}>
+            🔒 نحترم خصوصية جميع المستخدمين.
           </p>
         </div>
 
         <p style={footerStyle}>
-          منصة يد العون 🇩🇿
+          🤲 منصة يد العون 🇩🇿
+          <br />
+          <span style={footerBrand}>
+            HAMZA BOUGUERRA
+          </span>
         </p>
 
       </div>
@@ -50,7 +79,7 @@ export default function Home() {
 
 const mainStyle = {
   minHeight: "100vh",
-  background: "linear-gradient(135deg, #eef6ff, #f8fafc)",
+  background: "linear-gradient(135deg, #eef6ff, #f0fdf4)",
   padding: "35px 16px",
   fontFamily: "Arial, sans-serif",
 };
@@ -62,21 +91,30 @@ const containerStyle = {
 };
 
 const logo = {
-  width: "80px",
-  height: "80px",
+  width: "85px",
+  height: "85px",
   margin: "10px auto 15px",
   borderRadius: "50%",
   background: "#2563eb",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: "42px",
+  fontSize: "44px",
+  boxShadow: "0 6px 18px rgba(37,99,235,0.25)",
 };
 
 const titleStyle = {
   fontSize: "34px",
-  margin: "10px 0",
+  margin: "10px 0 5px",
   color: "#172554",
+};
+
+const brandStyle = {
+  fontSize: "15px",
+  fontWeight: "bold",
+  color: "#16a34a",
+  letterSpacing: "1px",
+  marginBottom: "12px",
 };
 
 const subtitleStyle = {
@@ -117,6 +155,19 @@ const buttonOrange = {
   background: "#f59e0b",
 };
 
+const buttonDark = {
+  ...buttonBase,
+  background: "#334155",
+};
+
+const buttonText = {
+  display: "block",
+  fontSize: "14px",
+  fontWeight: "normal",
+  marginTop: "7px",
+  opacity: 0.9,
+};
+
 const infoBox = {
   marginTop: "30px",
   padding: "20px",
@@ -126,8 +177,20 @@ const infoBox = {
   color: "#444",
 };
 
+const securityText = {
+  fontSize: "13px",
+  color: "#777",
+  marginBottom: 0,
+};
+
 const footerStyle = {
   marginTop: "35px",
   color: "#777",
   fontSize: "14px",
+  lineHeight: "1.8",
+};
+
+const footerBrand = {
+  fontWeight: "bold",
+  color: "#16a34a",
 };
