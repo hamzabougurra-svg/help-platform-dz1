@@ -1,13 +1,44 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
+
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js");
     }
+
+    const handleBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+      setShowInstall(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+    };
   }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+
+    installPrompt.prompt();
+
+    const { outcome } = await installPrompt.userChoice;
+
+    if (outcome === "accepted") {
+      setInstallPrompt(null);
+      setShowInstall(false);
+    }
+  };
 
   return (
     <main dir="rtl" style={mainStyle}>
@@ -24,6 +55,15 @@ export default function Home() {
         <p style={subtitleStyle}>
           معًا نساعد من يحتاج، ونصنع أثرًا جميلًا في مجتمعنا 🇩🇿
         </p>
+
+        {showInstall && (
+          <button onClick={handleInstall} style={installButton}>
+            📲 تثبيت التطبيق
+            <span style={buttonText}>
+              أضف منصة يد العون إلى هاتفك
+            </span>
+          </button>
+        )}
 
         <div style={buttonsStyle}>
 
@@ -139,6 +179,8 @@ const buttonsStyle = {
 
 const buttonBase = {
   display: "block",
+  width: "100%",
+  boxSizing: "border-box",
   padding: "18px",
   borderRadius: "16px",
   textDecoration: "none",
@@ -146,6 +188,14 @@ const buttonBase = {
   fontSize: "19px",
   fontWeight: "bold",
   boxShadow: "0 5px 15px rgba(0,0,0,0.12)",
+  border: "none",
+};
+
+const installButton = {
+  ...buttonBase,
+  background: "#7c3aed",
+  marginBottom: "15px",
+  cursor: "pointer",
 };
 
 const buttonBlue = {
